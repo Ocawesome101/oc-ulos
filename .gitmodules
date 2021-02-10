@@ -1,0 +1,6 @@
+[submodule "cynosure"]
+	path = cynosure
+	url = git@github.com:ocawesome101/oc-cynosure.git
+[submodule "refinement"]
+	path = refinement
+	url = git@github.com:ocawesome101/oc-refinement.git
