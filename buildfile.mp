@@ -12,4 +12,8 @@ _G.main = () ->
   log "err", "Assembling ULOS"
   for dir in *seq
     build dir
+  os.remove "out"
+  ex "mkdir -p out/sbin"
+  ex "cp cynosure/kernel.lua out/init.lua"
+  ex "cp refinement/refinement.lua out/sbin/init.lua"
   log "err", "ULOS assembled"
