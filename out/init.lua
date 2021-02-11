@@ -312,7 +312,7 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.attributes.raw and self.echo then
+    if self.echo then
       local ch = signal[3]
       if #char == 1 then
         char = ("^" .. string.char(
@@ -329,9 +329,9 @@ do
     else
       if char == "\13" then char = "\n"
       elseif char == "\8" then self:write("\8 \8") end
-    end
-    if self.echo then
-      self:write(char)
+      if self.echo then
+        self:write(char)
+      end
     end
     self.rb = string.format("%s%s", self.rb, char)
   end
@@ -410,7 +410,7 @@ do
     if sig.n == 0 then return nil end
     for k, v in pairs(handlers) do
       if v.signal == sig[1] then
-        v.callback()
+        v.callback(table.unpack(sig))
       end
     end
     return table.unpack(sig)
@@ -938,9 +938,9 @@ do
   acl.permissions = permissions
 
   function acl.user_has_permission(uid, permission)
-    checkArg(1, uid, "string")
+    checkArg(1, uid, "number")
     checkArg(2, permission, "number")
-    local attributes, err = k.users.attributes(uid)
+    local attributes, err = k.security.users.attributes(uid)
     if not attributes then
       return nil, err
     end
@@ -1054,20 +1054,22 @@ do
 
   local faux = {children = mounts}
   local resolving = {}
-  local resolve = function(path)
+  local resolve
+  resolve = function(path)
     if resolving[path] then
       return nil, "recursive mount detected"
     end
-    resolving[path] = true
     path = clean(path)
+    resolving[path] = true
     local current, parent = faux
-    if not current.children["/"] then
+    if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
     if current.children[path] then
       return current.children[path]
     end
     local segments = split(path)
+    table.insert(segments, 1, "/")
     local base_n = 1 -- we may have to traverse multiple mounts
     for i=1, #segments, 1 do
       local try = table.concat(segments, "/", base_n, i)
@@ -1084,7 +1086,7 @@ do
         end
         parent = current
         current = next_node
-      else
+      elseif not current.node:stat(try) then
         resolving[path] = false
         return nil, fs.errors.file_not_found
       end
@@ -1100,6 +1102,13 @@ do
   local registered = {partition_tables = {}, filesystems = {}}
 
   local _managed = {}
+  function _managed:info()
+    return {
+      read_only = self.node.isReadOnly(),
+      address = self.node.address
+    }
+  end
+
   function _managed:stat(file)
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
@@ -1265,11 +1274,11 @@ do
     local data = node.node:stat(path)
     local user = (k.scheduler.info() or {owner=0}).owner
     -- TODO: groups
-    if data.owner ~= user and not k.acl.user_has_permission(user,
-                            k.acl.permissions.user.OPEN_UNOWNED) then
+    if data.owner ~= user and not k.security.acl.user_has_permission(user,
+                            k.security.acl.permissions.user.OPEN_UNOWNED) then
       return nil, "permission denied"
     else
-      local perms = k.acl.permissions.file
+      local perms = k.security.acl.permissions.file
       local rperm, wperm
       if data.owner ~= user then
         rperm = perms.OTHER_READ
@@ -1279,9 +1288,9 @@ do
         wperm = perms.OWNER_WRITE
       end
       if (mode == "r" and not
-        k.acl.has_permissions(data.permissions, rperm)) or
+        k.security.acl.has_permission(data.permissions, rperm)) or
         ((mode == "w" or mode == "a") and not
-        k.acl.has_permission(data.permissions, wperm)) then
+        k.security.acl.has_permission(data.permissions, wperm)) then
         return nil, "permission denied"
       end
     end
@@ -1320,7 +1329,7 @@ do
     return node.node:remove(file)
   end
 
-  local mounts = {}
+  local mounted = {}
 
   fs.api.types = {
     RAW = 0,
@@ -1340,7 +1349,7 @@ do
       local sdev, serr = k.sysfs.resolve_device(node)
       if not sdev then return nil, serr end
       device, err = fs.get_filesystem_driver(sdev)
-    elseif type(node) ~= "string" then
+    else
       device, err = fs.get_filesystem_driver(node)
     end
     ::skip::
@@ -1354,8 +1363,8 @@ do
     fname = fname or path
     local pnode, err, rpath
     if path == "/" then
-      pnode, err, rpath = faux, nil, ""
-      fname = ""
+      mounts["/"] = {node = device, children = {}}
+      return true
     else
       pnode, err, rpath = resolve(root)
     end
@@ -1368,7 +1377,7 @@ do
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      mounts[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
+      mounted[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
     end
     return true
   end
@@ -1385,14 +1394,14 @@ do
     end
     local full = clean(string.format("%s/%s", rpath, fname))
     node.children[full] = nil
-    mounts[path] = nil
+    mounted[path] = nil
     return true
   end
 
   function fs.api.mounts()
     local new = {}
     -- prevent programs from meddling with these
-    for k,v in pairs(mounts) do new[k] = v end
+    for k,v in pairs(mounted) do new[k] = v end
     return new
   end
 
@@ -1411,26 +1420,30 @@ do
   local buffer = {}
   function buffer:read_byte()
     if self.buffer_mode ~= "none" then
-      if #self.read_buffer == 0 then
-        self.read_buffer = self.stream:read(self.buffer_size)
+      if (not self.read_buffer) or #self.read_buffer == 0 then
+        self.read_buffer = self.base:read(self.buffer_size)
       end
-      local dat = self.read_buffer:sub(-1)
-      self.read_buffer = self.read_buffer:sub(1, -2)
+      if not self.read_buffer then
+        self.closed = true
+        return nil
+      end
+      local dat = self.read_buffer:sub(1,1)
+      self.read_buffer = self.read_buffer:sub(2, -1)
       return dat
     else
-      return self.stream:read(1)
+      return self.base:read(1)
     end
   end
 
   function buffer:write_byte(byte)
     if self.buffer_mode ~= "none" then
       if #self.write_buffer >= self.buffer_size then
-        self.stream:write(self.write_buffer)
+        self.base:write(self.write_buffer)
         self.write_buffer = ""
       end
       self.write_buffer = string.format("%s%s", self.write_buffer, byte)
     else
-      return self.stream:write(byte)
+      return self.base:write(byte)
     end
     return true
   end
@@ -1497,7 +1510,7 @@ do
     local args = table.pack(...)
     local read = {}
     for i=1, args.n, 1 do
-      read[i] = buffer:read_formatted(args[i])
+      read[i] = self:read_formatted(args[i])
     end
     return table.unpack(read)
   end
@@ -1534,7 +1547,7 @@ do
       return nil, "bad file descriptor"
     end
     self:flush()
-    return self.stream:seek()
+    return self.base:seek()
   end
 
   function buffer:flush()
@@ -1542,7 +1555,7 @@ do
       return nil, "bad file descriptor"
     end
     if #self.write_buffer > 0 then
-      self.stream:write(self.write_buffer)
+      self.base:write(self.write_buffer)
       self.write_buffer = ""
     end
     return true
@@ -1558,8 +1571,10 @@ do
     __name = "FILE*"
   }
   function k.create_fstream(base, mode)
+    checkArg(1, base, "table")
+    checkArg(2, mode, "string")
     local new = {
-      stream = base,
+      base = base,
       buffer_size = 512,
       read_buffer = "",
       write_buffer = "",
@@ -1570,7 +1585,8 @@ do
     for c in mode:gmatch(".") do
       new.mode[c] = true
     end
-    return setmetatable(new, fmt)
+    setmetatable(new, fmt)
+    return new
   end
 end
 
@@ -1600,7 +1616,7 @@ do
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
     mode = mode or "r"
-    local handle, err = fs.open(file)
+    local handle, err = fs.open(file, mode)
     if not handle then
       return nil, err
     end
@@ -1827,6 +1843,10 @@ do
     return old_coroutine.resume(self.__thread, ...)
   end
 
+  function _coroutine:status()
+    return old_coroutine.status(self.__thread)
+  end
+
   setmetatable(_coroutine, {
     __index = function(t, k)
       if k.scheduler then
@@ -1962,10 +1982,10 @@ do
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
-    local parent = current
+    local parent = current or {}
     local new = k.create_process {
       name = args.name,
-      parent = parent.pid,
+      parent = parent.pid or 0,
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
       input = args.input,
@@ -2015,6 +2035,7 @@ do
     processes[proc] = nil
   end
 
+  local pullSignal = computer.pullSignal
   function api.loop()
     while processes[1] do
       local to_run = {}
@@ -2157,6 +2178,7 @@ do
   if not ok then
     k.panic(err)
   end
+  k.log(k.loglevels.info, "Mounted root filesystem")
 end
 
 do
@@ -2172,6 +2194,15 @@ do
   if not ok then
     k.panic(err)
   end
+  k.scheduler.spawn {
+    name = "init",
+    func = ok,
+    input = k.logio,
+    output = k.logio
+  }
+
+  k.log(k.loglevels.info, "Starting scheduler loop")
+  k.scheduler.loop()
 end
 
 k.panic("Premature exit!")

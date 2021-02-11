@@ -10,4 +10,4 @@ To build ULOS, you'll need a working install of Lua 5.3, a *nix-like system supp
 
 Make sure to clone with `--recursive`, since the repository has submodules.
 
-To build, just run `./build` from the repository root.
+To build, just run `./build` from the repository root.  Output will be placed in `out`.
