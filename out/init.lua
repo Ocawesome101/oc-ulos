@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.02.12"
+  k._VERSION = "2021.02.13"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -312,10 +312,14 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.echo then
+    if self.attributes.echo then
       local ch = signal[3]
-      if #char == 1 then
-        char = ("^" .. string.char(
+      local tw
+      if #char == 1 and ch == 0 then
+        char = ""
+        tw = ""
+      elseif #char == 1 and ch < 32 then
+        local tch = string.char(
             (ch == 0 and 32) or
             (ch < 27 and ch + 96) or
             (ch == 27 and "[") or
@@ -324,12 +328,15 @@ do
             (ch == 30 and "~") or
             (ch == 31 and "?") or ch
           ):upper()
-        )
+        tw = "^" .. tch
+        char = "\27[" .. tch
       end
-    else
-      if char == "\13" then char = "\n"
-      elseif char == "\8" then self:write("\8 \8") end
-      if self.echo then
+      if ch == 13 then char = "\n"
+      elseif ch == 8 then
+        tw = ("\27[D \27[D")
+        char = ""
+        self.rb = self.rb:sub(1, -1) end
+      if self.attributes.echo then
         self:write(char)
       end
     end
@@ -337,6 +344,7 @@ do
   end
   
   function _stream:read(n)
+    n = n or 0
     repeat
       coroutine.yield()
     until #self.rb >= n and ((not self.attributes.line) or
@@ -370,7 +378,7 @@ do
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
-      attributes = {}, -- terminal attributes
+      attributes = {echo=true,raw=false}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
       in_esc = false,
       gpu = proxy,
@@ -408,7 +416,7 @@ do
     checkArg(1, timeout, "number", "nil")
     local sig = table.pack(pull(timeout))
     if sig.n == 0 then return nil end
-    for k, v in pairs(handlers) do
+    for _, v in pairs(handlers) do
       if v.signal == sig[1] then
         v.callback(table.unpack(sig))
       end
@@ -572,7 +580,7 @@ do
     local shadow = {}
     local copy_mt = {
       __index = function(_, k)
-        local item = shadow[k] or tbl[k]
+        local item = rawget(shadow, k) or rawget(tbl, k)
         return util.copy(item)
       end,
       __pairs = function()
@@ -1533,6 +1541,10 @@ do
       args[i] = tostring(args[i])
       write = string.format("%s%s", write, args[i])
     end
+    if self.buffer_mode == "none" then
+      -- a-ha! performance shortcut!
+      return self.base:write(write)
+    end
     for i=1, #write, 1 do
       local char = write:sub(i,i)
       self:write_byte(char)
@@ -1646,13 +1658,13 @@ do
     return file:lines(fmt)
   end
 
-  local function stream(k)
+  local function stream(kk)
     return function(v)
       local t = k.scheduler.info().data.io
       if v then
-        t[k] = v
+        t[kk] = v
       end
-      return t[k]
+      return t[kk]
     end
   end
 
@@ -1888,6 +1900,7 @@ do
         self.threads[k] = nil
         if not result[1] then
           self:push_signal("thread_died", v.id)
+          return nil, result[2]
         end
       end
     end
@@ -1999,9 +2012,8 @@ do
 
   function api.info(pid)
     checkArg(1, pid, "number", "nil")
-    local proc
-    if pid then proc = processes[pid]
-    else proc = current end
+    pid = pid or current
+    local proc = processes[pid]
     if not proc then
       return nil, "no such process"
     end
@@ -2014,7 +2026,7 @@ do
       status = proc:status(),
       cputime = proc.cputime
     }
-    if proc.pid == current.pid then
+    if proc.pid == current then
       info.data = {
         push_signal = proc.push_signal,
         pull_signal = proc.pull_signal,
@@ -2065,11 +2077,12 @@ do
       end
       for i, proc in ipairs(to_run) do
         local psig = sig
-        local start_time = computer.uptime()
+        current = i
         if #proc.queue > 0 then -- the process has queued signals
           proc:push_signal(table.unpack(sig))
           psig = proc:pull_signal()
         end
+        local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
         if ok == "__internal_process_exit" or not ok then
           local exit = err or 0
@@ -2080,6 +2093,7 @@ do
             err = "exited"
           end
           err = err or "died"
+          k.log(k.loglevels.warn, "process died: ", proc.pid, exit, err)
           computer.pushSignal("process_died", proc.pid, exit, err)
           for k, v in pairs(proc.handles) do
             pcall(v.close, v)
@@ -2087,6 +2101,7 @@ do
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
+          proc.deadline = computer.uptime() + (tonumber(ok) or math.huge)
         end
       end
     end
@@ -2194,11 +2209,13 @@ do
   if not ok then
     k.panic(err)
   end
+  local ios = k.create_fstream(k.logio, "rw")
+  ios.buffer_mode = "none"
   k.scheduler.spawn {
     name = "init",
     func = ok,
-    input = k.logio,
-    output = k.logio
+    input = ios,
+    output = ios
   }
 
   k.log(k.loglevels.info, "Starting scheduler loop")

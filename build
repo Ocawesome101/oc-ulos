@@ -126,13 +126,13 @@ if not ok then -- 98
 	log("err", "buildfile: ", err) -- 99
 	os.exit(1) -- 100
 end -- 98
-ok(args) -- 102
+ok() -- 102
 if not env.main then -- 103
 	log("err", "no main()") -- 104
 	os.exit(1) -- 105
 end -- 103
 local _obj_0 = env.main -- 106
 if _obj_0 ~= nil then -- 106
-	_obj_0() -- 106
+	_obj_0(args) -- 106
 end -- 106
 return log("info", "done.") -- 107

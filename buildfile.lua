@@ -10,7 +10,7 @@ local build = function(dir)
   io.write(assert(ex("cd", dir, "; ../build")))
 end
 
-_G.main = function(...)
+_G.main = function(args)
   log("err", "Assembling ULOS")
   for _, dir in ipairs(seq) do
     build(dir)
@@ -20,7 +20,7 @@ _G.main = function(...)
   ex("cp cynosure/kernel.lua out/init.lua")
   ex("cp refinement/refinement.lua out/sbin/init.lua")
   log("err", "ULOS assembled")
-  if (...) == "ocvm" then
+  if args[1] == "ocvm" then
     os.execute( "ocvm ..")
   end
 end
