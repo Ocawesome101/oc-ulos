@@ -110,12 +110,12 @@ log = function(...) -- 77
 end -- 77
 local args = table.pack(...) -- 83
 local buildsrc -- 84
-if env.exists("buildfile.mp") then -- 86
-	log("info", "using buildfile.mp") -- 87
-	buildsrc = assert((require("moonp")).to_lua(env.fread("buildfile.mp"))) -- 88
-elseif env.exists("buildfile.lua") then -- 89
+if env.exists("buildfile.lua") then -- 89
 	log("info", "using buildfile.lua") -- 90
 	buildsrc = env.fread("buildfile.lua") -- 91
+elseif env.exists("buildfile.mp") then -- 86
+	log("info", "using buildfile.mp") -- 87
+	buildsrc = assert((require("moonp")).to_lua(env.fread("buildfile.mp"))) -- 88
 else -- 92
 	log("err", "buildfile.mp or buildfile.lua not found!") -- 93
 	os.exit(1) -- 94
