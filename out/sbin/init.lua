@@ -7,7 +7,7 @@ local rf = {}
 do
   rf._NAME = "Refinement"
   rf._RELEASE = "0"
-  local version = "2021.02.13"
+  local version = "2021.02.15"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
@@ -36,7 +36,6 @@ end
 
 do
 end
-
 
 
 while true do io.write("RF> ") io.read() end

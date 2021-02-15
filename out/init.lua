@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.02.13"
+  k._VERSION = "2021.02.15"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -572,9 +572,11 @@ do
     return setmetatable(new, mt)
   end
 
-  -- create memory-friendly copies of tables
-  -- uses metatable weirdness
-  -- this is a bit like util.protect
+  -- create hopefully memory-friendly copies of tables
+  -- uses metatable magic
+  -- this is a bit like util.protect except tables are still writable
+  -- even i still don't fully understand how this works, but it works
+  -- nonetheless
   function util.copy(tbl)
     if type(tbl) ~= "table" then return tbl end
     local shadow = {}
@@ -1835,7 +1837,9 @@ do
   function _coroutine.create(func)
     checkArg(1, func, "function")
     return setmetatable({
-      __thread = old_coroutine.create(func)
+      __thread = old_coroutine.create(function()
+        return select(2, assert(xpcall(func, debug.traceback)))
+      end)
     },
     {
       __index = _coroutine,
@@ -2064,6 +2068,7 @@ do
           break
         end
       end
+      --k.log(k.loglevels.info, min_timeout)
       local sig = table.pack(pullSignal(min_timeout))
       for k, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
@@ -2084,6 +2089,7 @@ do
         end
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
+        k.log(k.loglevels.info, ok, err)
         if ok == "__internal_process_exit" or not ok then
           local exit = err or 0
           if type(err) == "string" then
