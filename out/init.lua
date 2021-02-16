@@ -344,6 +344,7 @@ do
   end
   
   function _stream:read(n)
+<<<<<<< HEAD
     checkArg(1, n, "number")
     if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
