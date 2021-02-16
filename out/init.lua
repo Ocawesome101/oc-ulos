@@ -344,7 +344,6 @@ do
   end
   
   function _stream:read(n)
-<<<<<<< HEAD
     checkArg(1, n, "number")
     if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
@@ -1530,7 +1529,6 @@ do
     for i=1, args.n, 1 do
       read[i] = self:read_formatted(args[i])
     end
-    k.log(k.loglevels.info, "BUFFER READ RETURN")
     return table.unpack(read)
   end
 
@@ -1712,7 +1710,7 @@ do
     for i=1, args.n, 1 do
       args[i] = tostring(args[i])
     end
-    return io.write(table.concat(args, "  ", 1, args.n))
+    return io.write(table.concat(args, "  ", 1, args.n), "\n")
   end
 end
 
