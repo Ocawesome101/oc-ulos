@@ -16,26 +16,27 @@ end
 
 do
   rf.prefix = {
-    busy = "\27[34mbusy\27[39m ",
-    info = "\27[34minfo\27[39m ",
-    done = "\27[32mdone\27[39m ",
-    fail = "\27[31mfail\27[39m ",
-    warn = "\27[33mwarn\27[39m"
+    busy = "\27[97m[\27[94mbusy\27[97m] ",
+    info = "\27[97m[\27[94minfo\27[97m] ",
+    done = "\27[97m[\27[92mdone\27[97m] ",
+    fail = "\27[97m[\27[91mfail\27[97m] ",
+    warn = "\27[97m[\27[93mwarn\27[97m] "
   }
   function rf.log(...)
     io.write(...)
     io.write("\n")
   end
 
-  k.log(k.loglevels.info, "REFINEMENT HAS STARTED")
-  rf.log(rf.prefix.info, "Starting ", rf._VERSION)
+  rf.log(rf.prefix.info, "Starting \27[94m", rf._VERSION, "\27[97m")
 end
 
 
 -- service management --
 
+rf.log(rf.prefix.info, "src/services")
+
 do
 end
 
 
-while true do io.write("RF> ") print(io.read()) end
+while true do coroutine.yield() end

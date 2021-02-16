@@ -46,13 +46,21 @@ end
 do
   local colors = {
     0x000000,
-    0xFF0000,
-    0x00FF00,
-    0xFFFF00,
-    0x0000FF,
-    0xFF00FF,
-    0x00AAFF,
-    0xFFFFFF
+    0xaa0000,
+    0x00aa00,
+    0xaa5500,
+    0x0000aa,
+    0xaa00aa,
+    0x0055aa,
+    0xaaaaaa,
+    0x555555,
+    0xff5555,
+    0x55ff55,
+    0xffff55,
+    0x5555ff,
+    0xff55ff,
+    0x55ffff,
+    0xffffff
   }
 
   -- pop characters from the end of a string
@@ -199,6 +207,12 @@ do
         self.gpu.setBackground(self.bg)
       elseif n == 49 then
         self.bg = colors[1]
+        self.gpu.setBackground(self.bg)
+      elseif n > 89 and n < 98 then
+        self.fg = colors[n - 81]
+        self.gpu.setForeground(self.fg)
+      elseif n > 99 and n < 108 then
+        self.bg = colors[n - 91]
         self.gpu.setBackground(self.bg)
       end
     end
@@ -380,6 +394,8 @@ do
     checkArg(2, screen, "string")
     local proxy = component.proxy(gpu)
     proxy.bind(screen)
+    proxy.setForeground(colors[8])
+    proxy.setBackground(colors[1])
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
@@ -390,8 +406,8 @@ do
       esc = "",
       cx = 1,
       cy = 1,
-      fg = 0xFFFFFF,
-      bg = 0,
+      fg = colors[8],
+      bg = colors[1],
       rb = ""
     }, {__index = _stream})
     new.w, new.h = proxy.maxResolution()
@@ -1878,25 +1894,9 @@ do
     return old_coroutine.status(self.__thread)
   end
 
-  setmetatable(_coroutine, {
-    __index = function(t, k)
-      if k.scheduler then
-        local process = k.scheduler.info()
-        if process.data.coroutine[k] then
-          return process.data.coroutine[k]
-        end
-      end
-      return old_coroutine[k]
-    end,
-    __pairs = function()
-      -- build iterable table
-      local iter = k.util.merge_tables(old_coroutine,
-                      _coroutine,
-                      (k.scheduler and k.scheduler.info().data.coroutine or {}))
-      return pairs(iter)
-    end,
-    __metatable = {}
-  })
+  for k,v in pairs(old_coroutine) do
+    _coroutine[k] = _coroutine[k] or v
+  end
 end
 
 
@@ -2158,8 +2158,8 @@ do
     -- still error, slightly less hard
     k.panic("Cannot determine root filesystem!")
   else
-    k.log(k.loglevels.warn, "\27[41;37mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
-    k.log(k.loglevels.warn, "\27[41;37mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
+    k.log(k.loglevels.warn, "\27[101;97mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
+    k.log(k.loglevels.warn, "\27[101;97mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
     root = computer.getBootAddress()
     reftype = "UUID"
   end
