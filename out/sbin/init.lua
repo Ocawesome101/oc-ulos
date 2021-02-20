@@ -7,7 +7,7 @@ local rf = {}
 do
   rf._NAME = "Refinement"
   rf._RELEASE = "0"
-  local version = "2021.02.16"
+  local version = "2021.02.20"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
@@ -36,6 +36,7 @@ end
 rf.log(rf.prefix.info, "src/services")
 
 do
+  local running = {}
 end
 
 

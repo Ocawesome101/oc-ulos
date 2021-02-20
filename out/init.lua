@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.02.16"
+  k._VERSION = "2021.02.20"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -598,30 +598,59 @@ do
   -- this is a bit like util.protect except tables are still writable
   -- even i still don't fully understand how this works, but it works
   -- nonetheless
-  function util.copy(tbl)
-    if type(tbl) ~= "table" then return tbl end
-    local shadow = {}
-    local copy_mt = {
-      __index = function(_, k)
-        local item = rawget(shadow, k) or rawget(tbl, k)
-        return util.copy(item)
-      end,
-      __pairs = function()
-        local iter = {}
-        for k, v in pairs(tbl) do
-          iter[k] = util.copy(v)
+  if computer.totalMemory() <= 262144 then
+    -- if we have 256k or less memory, use the mem-friendly function
+    function util.copy(tbl)
+      if type(tbl) ~= "table" then return tbl end
+      local shadow = {}
+      local copy_mt = {
+        __index = function(_, k)
+          local item = rawget(shadow, k) or rawget(tbl, k)
+          return util.copy(item)
+        end,
+        __pairs = function()
+          local iter = {}
+          for k, v in pairs(tbl) do
+            iter[k] = util.copy(v)
+          end
+          for k, v in pairs(shadow) do
+            iter[k] = v
+          end
+          return pairs(iter)
         end
-        for k, v in pairs(shadow) do
-          iter[k] = v
+        -- no __metatable: leaving this metatable exposed isn't a huge
+        -- deal, since there's no way to access `tbl` for writing using any
+        -- of the functions in it.
+      }
+      copy_mt.__ipairs = copy_mt.__pairs
+      return setmetatable(shadow, copy_mt)
+    end
+  else
+    -- from https://lua-users.org/wiki/CopyTable
+    local function deepcopy(orig, copies)
+      copies = copies or {}
+      local orig_type = type(orig)
+      local copy
+      if orig_type == 'table' then
+        if copies[orig] then
+          copy = copies[orig]
+        else
+          copy = {}
+          copies[orig] = copy
+          for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+          end
+          setmetatable(copy, deepcopy(getmetatable(orig), copies))
         end
-        return pairs(iter)
+      else -- number, string, boolean, etc
+        copy = orig
       end
-      -- no __metatable: leaving this metatable exposed isn't a huge
-      -- deal, since there's no way to access `tbl` for writing using any
-      -- of the functions in it.
-    }
-    copy_mt.__ipairs = copy_mt.__pairs
-    return setmetatable(shadow, copy_mt)
+      return copy
+    end
+
+    function util.copy_table(t)
+      return deepcopy(t)
+    end
   end
 
   function util.to_hex(str)
@@ -947,9 +976,14 @@ do
   -- allowing users only to log on at certain times of day.
   local permissions = {
     user = {
-      CAN_SUDO = 1,
-      CAN_MOUNT = 2,
+      SUDO = 1,
+      MOUNT = 2,
       OPEN_UNOWNED = 4,
+      COMPONENTS = 8,
+      HWINFO = 16,
+      SETARCH = 32,
+      MANAGE_USERS = 64,
+      BOOTADDR = 128
     },
     file = {
       OWNER_READ = 1,
@@ -1819,6 +1853,40 @@ do
     end
     return ret
   end
+
+  k.hooks.add("sandbox", function()
+    k.userspace.k = nil
+    local acl = k.security.acl
+    local perms = acl.permissions
+    local function wrap(f, p)
+      return function(...)
+        if not acl.user_has_permission(k.scheduler.info().owner,
+            p) then
+          error("permission denied")
+        end
+        return f(...)
+      end
+    end
+    k.userspace.component = nil
+    k.userspace.computer = nil
+    k.userspace.unicode = nil
+    k.userspace.package.loaded.component = {}
+    for k,v in pairs(component) do
+      k.userspace.package.loaded.component[k] = wrap(v,
+        perms.user.COMPONENTS)
+    end
+    k.userspace.package.loaded.computer = {
+      getDeviceInfo = wrap(computer.getDeviceInfo, perms.user.HWINFO),
+      setArchitecture = wrap(computer.setArchitecture, perms.user.SETARCH),
+      addUser = wrap(computer.addUser, perms.user.MANAGE_USERS),
+      removeUser = wrap(computer.removeUser, perms.user.MANAGE_USERS),
+      setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
+    }
+    for k, v in pairs(computer) do
+      k.userspace.package.loaded.computer[k] = k.userspace.package.loaded.computer[k] or v
+    end
+    k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
+  end)
 end
 
 
@@ -1977,8 +2045,6 @@ do
       handles = {},
       cputime = 0,
       deadline = 0,
-      coroutine = {} -- overrides for some coroutine methods
-                     -- potentially used in pipes
     }, proc_mt)
     args.stdin, args.stdout, args.stderr,
                     args.input, args.output = nil, nil, nil
@@ -2021,7 +2087,8 @@ do
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
       input = args.input,
-      output = args.output
+      output = args.output,
+      owner = parent.owner or 0,
     }
     new:add_thread(args.func)
     processes[new.pid] = new
@@ -2043,7 +2110,8 @@ do
       deadline = proc.deadline,
       n_threads = #proc.threads,
       status = proc:status(),
-      cputime = proc.cputime
+      cputime = proc.cputime,
+      owner = proc.owner
     }
     if proc.pid == current then
       info.data = {
@@ -2219,7 +2287,7 @@ end
 
 do
   k.log(k.loglevels.info, "Creating userspace sandbox")
-  local sbox = k.util.copy(_G)
+  local sbox = k.util.copy_table(_G)
   k.userspace = sbox
   sbox._G = sbox
   k.hooks.call("sandbox", sbox)
