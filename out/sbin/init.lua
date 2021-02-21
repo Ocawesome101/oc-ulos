@@ -7,7 +7,7 @@ local rf = {}
 do
   rf._NAME = "Refinement"
   rf._RELEASE = "0"
-  local version = "2021.02.20"
+  local version = "2021.02.21"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
