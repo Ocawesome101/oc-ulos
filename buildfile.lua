@@ -1,5 +1,8 @@
 -- buildfile
 
+local OS = "ULOS"
+local REL = os.date("%y.%m").."-r0"
+
 local seq = {
   "cynosure",
   "refinement"
@@ -7,7 +10,7 @@ local seq = {
 
 local build = function(dir)
   log("err", "building sub-project ", dir)
-  io.write(assert(ex("cd", dir, "; ../build")))
+  io.write(assert(ex("cd", dir, "; OS='"..OS.." "..REL.."' ../build")))
 end
 
 _G.main = function(args)

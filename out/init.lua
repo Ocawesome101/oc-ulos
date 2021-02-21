@@ -2133,7 +2133,7 @@ do
     if not processes[proc] then
       return nil, "no such process"
     end
-    processes[proc] = nil
+    processes[proc].dead = true
   end
 
   local pullSignal = computer.pullSignal
@@ -2175,7 +2175,7 @@ do
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
         --k.log(k.loglevels.info, ok, err)
-        if ok == "__internal_process_exit" or not ok then
+        if proc.dead or ok == "__internal_process_exit" or not ok then
           local exit = err or 0
           if type(err) == "string" then
             exit = 127
@@ -2203,6 +2203,49 @@ do
   end
 
   k.scheduler = api
+  
+  -- sandbox hook for userspace 'process' api
+  k.hooks.add("sandbox", function()
+    local p = {}
+    k.userspace.package.loaded.process = p
+    
+    function p.spawn(args)
+      checkArg(1, args.name, "string")
+      checkArg(2, args.func, "function")
+      local sanitized = {
+        func = args.func,
+        name = args.name,
+        stdin = args.stdin,
+        stdout = args.stdout,
+        input = args.input,
+        output = args.output
+      }
+      local new = api.spawn(sanitized)
+      return new.pid
+    end
+    
+    function p.kill(pid)
+      checkArg(1, pid, "number", "nil")
+      local cur = current
+      local atmp = processes[pid]
+      if (atmp or {owner=current.owner}).owner ~= cur.owner and
+         cur.owner ~= 0 then
+        return nil, "permission denied"
+      end
+      return api.kill(pid)
+    end
+    
+    function p.list()
+      local pr = {}
+      for k, v in pairs(processes) do
+        pr[#pr+1]=k
+      end
+      table.sort(pr)
+      return pr
+    end
+    
+    p.info = api.info
+  end)
 end
 
 
