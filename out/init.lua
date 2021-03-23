@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.03.02"
+  k._VERSION = "2021.03.23"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -326,33 +326,37 @@ do
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    if self.attributes.echo then
-      local ch = signal[3]
-      local tw
-      if #char == 1 and ch == 0 then
-        char = ""
-        tw = ""
-      elseif #char == 1 and ch < 32 then
-        local tch = string.char(
-            (ch == 0 and 32) or
-            (ch < 27 and ch + 96) or
-            (ch == 27 and "[") or
-            (ch == 28 and "\\") or
-            (ch == 29 and "]") or
-            (ch == 30 and "~") or
-            (ch == 31 and "?") or ch
-          ):upper()
-        tw = "^" .. tch
-        char = "\27[" .. tch
-      end
-      if ch == 13 then char = "\n"
+    local ch = signal[3]
+    local tw = char
+    if #char == 1 and ch == 0 then
+      char = ""
+      tw = ""
+    elseif char:match("\27%[[ABCD]") then
+      tw = string.format("^[%s", char:sub(-1))
+    elseif #char == 1 and ch < 32 then
+      local tch = string.char(
+          (ch == 0 and 32) or
+          (ch < 27 and ch + 96) or
+          (ch == 27 and "[") or
+          (ch == 28 and "\\") or
+          (ch == 29 and "]") or
+          (ch == 30 and "~") or
+          (ch == 31 and "?") or ch
+        ):upper()
+      tw = "^" .. tch
+    end
+    if not self.attributes.raw then
+      if ch == 13 then
+        char = "\n"
+        tw = "\n"
       elseif ch == 8 then
-        tw = ("\27[D \27[D")
+        tw = "\27[D \27[D"
         char = ""
-        self.rb = self.rb:sub(1, -1) end
-      if self.attributes.echo then
-        self:write(char)
+        self.rb = self.rb:sub(1, -1)
       end
+    end
+    if self.attributes.echo then
+      self:write(tw or "")
     end
     self.rb = string.format("%s%s", self.rb, char)
   end
@@ -598,9 +602,10 @@ do
   -- this is a bit like util.protect except tables are still writable
   -- even i still don't fully understand how this works, but it works
   -- nonetheless
-  if computer.totalMemory() <= 262144 then
+  --[[
+  if computer.totalMemory() < 262144 then
     -- if we have 256k or less memory, use the mem-friendly function
-    function util.copy(tbl)
+    function util.copy_table(tbl)
       if type(tbl) ~= "table" then return tbl end
       local shadow = {}
       local copy_mt = {
@@ -625,7 +630,7 @@ do
       copy_mt.__ipairs = copy_mt.__pairs
       return setmetatable(shadow, copy_mt)
     end
-  else
+  else--]] do
     -- from https://lua-users.org/wiki/CopyTable
     local function deepcopy(orig, copies)
       copies = copies or {}
