@@ -10,7 +10,7 @@ push () {
 
 push cynosure
 push refinement
-push coreutils
+push external
 
 git add .
 git commit
