@@ -4,3 +4,6 @@
 [submodule "refinement"]
 	path = refinement
 	url = git@github.com:ocawesome101/oc-refinement.git
+[submodule "coreutils"]
+	path = coreutils
+	url = git@github.com:ocawesome101/ulos-coreutils

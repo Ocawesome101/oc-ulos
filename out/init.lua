@@ -1892,6 +1892,10 @@ do
       k.userspace.package.loaded.computer[f] = k.userspace.package.loaded.computer[f] or v
     end
     k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
+    k.userspace.package.loaded.filesystem = k.util.copy_table(k.fs.api)
+    local ufs = k.userspace.package.loaded.filesystem
+    ufs.mount = wrap(k.fs.api.mount, perms.user.MOUNT)
+    ufs.umount = wrap(k.fs.api.umount, perms.user.MOUNT)
   end)
 end
 

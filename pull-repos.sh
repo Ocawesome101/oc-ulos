@@ -9,3 +9,4 @@ pull () {
 git pull
 pull cynosure
 pull refinement
+pull coreutils

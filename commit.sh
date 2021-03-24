@@ -9,6 +9,7 @@ commit () {
 
 commit cynosure
 commit refinement
+commit coreutils
 
 git add .
 git commit -m 'updates'

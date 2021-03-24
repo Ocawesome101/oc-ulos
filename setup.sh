@@ -9,3 +9,4 @@ switch () {
 
 switch cynosure
 switch refinement
+switch coreutils

@@ -122,6 +122,30 @@ do
     end
     return true
   end
+
+  rf.log(rf.prefix.info, "Starting services")
+
+  local config = {}
+  local fs = require("filesystem")
+  if fs.stat("/etc/rf.cfg") then
+    local section
+    for line in io.lines("/etc/rf.cfg") do
+      if line:match("%[.+%]") then
+        section = line:sub(2, -2)
+        config[section] = config[section] or {}
+      else
+        local k, v = line:match("^(.-) = (.+)$")
+        if v:match("^%[.+%]$") then
+          config[section][k] = {}
+          for item in v:gmatch("[^%[%]%s,]+") do
+            table.insert(config[section][k], tonumber(item) or item)
+          end
+        else
+          config[section][k] = v
+        end
+      end
+    end
+  end
 end
 
 rf.log(rf.prefix.done, "src/services")
