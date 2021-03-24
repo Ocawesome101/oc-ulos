@@ -3,10 +3,10 @@
 
 switch () {
   cd $1
-  git switch master
+  git switch "$1"
   cd ..
 }
 
-switch cynosure
-switch refinement
-switch external
+switch cynosure dev
+switch refinement master
+switch external master
