@@ -13,5 +13,5 @@ push refinement
 push external
 
 git add .
-git commit
+git commit -m 'updates'
 git push
