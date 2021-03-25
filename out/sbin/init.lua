@@ -10,7 +10,7 @@ do
   rf._RUNNING_ON = "ULOS 21.03-r0"
   
   io.write("\n  \27[97mWelcome to \27[93m", rf._RUNNING_ON, "\27[97m!\n\n")
-  local version = "2021.03.23"
+  local version = "2021.03.25"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
@@ -84,6 +84,7 @@ do
   local running = {}
   local sv = {up=true}
   
+  local config = {}
   local starting = {}
   sv.up = function(srv)
     checkArg(1, srv, "string")
@@ -125,7 +126,17 @@ do
 
   rf.log(rf.prefix.info, "Starting services")
 
-  local config = {}
+  -- string -> boolean, number, or string
+  local function coerce(val)
+    if val == "true" then
+      return true
+    elseif val == "false" then
+      return false
+    else
+      return tonumber(val) or val
+    end
+  end
+
   local fs = require("filesystem")
   if fs.stat("/etc/rf.cfg") then
     local section
@@ -138,13 +149,17 @@ do
         if v:match("^%[.+%]$") then
           config[section][k] = {}
           for item in v:gmatch("[^%[%]%s,]+") do
-            table.insert(config[section][k], tonumber(item) or item)
+            table.insert(config[section][k], coerce(item))
           end
         else
-          config[section][k] = v
+          config[section][k] = coerce(v)
         end
       end
     end
+  end
+  
+  for k, v in pairs(config) do
+    
   end
 end
 
