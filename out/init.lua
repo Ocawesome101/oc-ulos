@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.03.25"
+  k._VERSION = "2021.04.02"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -528,7 +528,7 @@ do
   end
 end
 
-k.log(k.loglevels.info, "Starting\27[33m", _OSVERSION, "\27[37m")
+k.log(k.loglevels.info, "Starting\27[97m", _OSVERSION, "\27[37m")
 
 
 -- kernel hooks
@@ -1719,6 +1719,9 @@ do
 
   function io.lines(file, fmt)
     file = file or io.stdin
+    if type(file) == "string" then
+      file = assert(io.open(file, "r"))
+    end
     return file:lines(fmt)
   end
 

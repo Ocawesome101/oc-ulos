@@ -7,10 +7,10 @@ local rf = {}
 do
   rf._NAME = "Refinement"
   rf._RELEASE = "0"
-  rf._RUNNING_ON = "ULOS 21.03-r0"
+  rf._RUNNING_ON = "ULOS 21.04-r0"
   
   io.write("\n  \27[97mWelcome to \27[93m", rf._RUNNING_ON, "\27[97m!\n\n")
-  local version = "2021.03.25"
+  local version = "2021.04.02"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
@@ -19,24 +19,23 @@ end
 
 do
   rf.prefix = {
-    busy = "\27[97m[\27[94mbusy\27[97m] ",
-    info = "\27[97m[\27[94minfo\27[97m] ",
-    done = "\27[97m[\27[92mdone\27[97m] ",
-    fail = "\27[97m[\27[91mfail\27[97m] ",
-    warn = "\27[97m[\27[93mwarn\27[97m] "
+    red = "\27[91m*\27[97m ",
+    blue = "\27[94m*\27[97m ",
+    green = "\27[92m*\27[97m ",
+    yellow = "\27[93m*\27[97m "
   }
   function rf.log(...)
     io.write(...)
     io.write("\n")
   end
 
-  rf.log(rf.prefix.info, "Starting \27[94m", rf._VERSION, "\27[97m")
+  rf.log(rf.prefix.blue, "Starting \27[94m", rf._VERSION, "\27[97m")
 end
 
 
 -- require function
 
-rf.log(rf.prefix.busy, "src/require")
+rf.log(rf.prefix.green, "src/require")
 
 do
   local loaded = package.loaded
@@ -71,60 +70,10 @@ do
   end
 end
 
-rf.log(rf.prefix.done, "src/require")
 
-
--- service management --
-
-rf.log(rf.prefix.busy, "src/services")
-
+local config = {}
 do
-  local svdir = "/etc/rf/"
-
-  local running = {}
-  local sv = {up=true}
-  
-  local config = {}
-  local starting = {}
-  sv.up = function(srv)
-    checkArg(1, srv, "string")
-    if starting[srv] then
-      error("circular dependency detected")
-    end
-    local senv = setmetatable({needs=sv.up}, {__index=_G, __pairs=_G})
-    local spath = string.format("%s/%s", svdir, srv)
-    local ok, err = loadfile(svpath, nil, senv)
-    if not ok then
-      return nil, err
-    end
-    starting[srv] = true
-    local st, rt = pcall(ok)
-    if not st and rt then return nil, rt end
-    if senv.start then pcall(senv.start) end
-    running[srv] = senv
-    return true
-  end
-  
-  function sv.down(srv)
-    checkArg(1, srv, "string")
-    if not running[srv] then
-      return true, "no such service"
-    end
-    if running[srv].stop then
-      pcall(running[srv].stop)
-    end
-    running[srv] = nil
-  end
-  
-  function sv.msg(srv, ...)
-    checkArg(1, srv, "string")
-    if running[srv] and running[srv].msg then
-      return pcall(running[srv].msg, ...)
-    end
-    return true
-  end
-
-  rf.log(rf.prefix.info, "Starting services")
+  rf.log(rf.prefix.blue, "Loading service configuration")
 
   -- string -> boolean, number, or string
   local function coerce(val)
@@ -132,6 +81,8 @@ do
       return true
     elseif val == "false" then
       return false
+    elseif val == "nil" then
+      return nil
     else
       return tonumber(val) or val
     end
@@ -146,24 +97,53 @@ do
         config[section] = config[section] or {}
       else
         local k, v = line:match("^(.-) = (.+)$")
-        if v:match("^%[.+%]$") then
-          config[section][k] = {}
-          for item in v:gmatch("[^%[%]%s,]+") do
-            table.insert(config[section][k], coerce(item))
+        if k and v then
+          if v:match("^%[.+%]$") then
+            config[section][k] = {}
+            for item in v:gmatch("[^%[%]%s,]+") do
+              table.insert(config[section][k], coerce(item))
+           end
+          else
+            config[section][k] = coerce(v)
           end
-        else
-          config[section][k] = coerce(v)
         end
       end
     end
   end
-  
-  for k, v in pairs(config) do
-    
-  end
 end
 
-rf.log(rf.prefix.done, "src/services")
+
+-- service management, again
+
+rf.log(rf.prefix.green, "src/services")
+
+do
+  local svdir = "nil"
+  local sv = {up = nil}
+  local running = {}
+  local process = require("process")
+  
+  function sv.up(svc)
+  end
+  
+  function sv.down(svc)
+  end
+  
+  function sv.list()
+  end
+  
+  function sv.msg()
+  end
+  
+  rf.log(rf.prefix.blue, "Starting services")
+  for k, v in pairs(config) do
+    if v.autostart then
+      rf.log(rf.prefix.yellow, "service START: ", k)
+      sv.up(k)
+      rf.log(rf.prefix.yellow, "service UP: ", k)
+    end
+  end
+end
 
 
 while true do coroutine.yield() end
