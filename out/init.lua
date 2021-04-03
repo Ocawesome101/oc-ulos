@@ -1797,7 +1797,7 @@ do
   local function libError(name, searched)
     local err = "module '%s' not found:\n\tno field package.loaded['%s']"
     err = err .. ("\n\tno file '%s'"):rep(#searched)
-    error(string.format(err, name, name, table.unpack(searched)))
+    return string.format(err, name, name, table.unpack(searched))
   end
 
   function package.searchpath(name, path, sep, rep)
@@ -1816,7 +1816,7 @@ do
       end
       searched[#searched + 1] = search
     end
-    return nil, searched
+    return nil, libError(name, searched)
   end
 
   package.protect = k.util.protect

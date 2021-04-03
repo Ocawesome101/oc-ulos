@@ -133,7 +133,10 @@ do
     end
     if config[svc].depends then
       for i, v in ipairs(config[svc].depends) do
-        sv.up(v)
+        local ok, err = sv.up(v)
+        if not ok then
+          return nil, "failed starting dependency " .. v .. ": " .. err
+        end
       end
     end
     local path = config[svc].file or
