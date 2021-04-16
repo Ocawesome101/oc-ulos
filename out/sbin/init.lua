@@ -10,7 +10,7 @@ do
   rf._RUNNING_ON = "ULOS 21.04-r0"
   
   io.write("\n  \27[97mWelcome to \27[93m", rf._RUNNING_ON, "\27[97m!\n\n")
-  local version = "2021.04.02"
+  local version = "2021.04.16"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
@@ -19,10 +19,10 @@ end
 
 do
   rf.prefix = {
-    red = "\27[91m*\27[97m ",
-    blue = "\27[94m*\27[97m ",
-    green = "\27[92m*\27[97m ",
-    yellow = "\27[93m*\27[97m "
+    red = " \27[91m*\27[97m ",
+    blue = " \27[94m*\27[97m ",
+    green = " \27[92m*\27[97m ",
+    yellow = " \27[93m*\27[97m "
   }
   function rf.log(...)
     io.write(...)
@@ -119,7 +119,7 @@ end
 rf.log(rf.prefix.green, "src/services")
 
 do
-  local svdir = "nil"
+  local svdir = "/etc/rf/"
   local sv = {}
   local running = {}
   local process = require("process")
@@ -129,7 +129,7 @@ do
       return true
     end
     if not config[svc] then
-      return nil, "no service configuration"
+      return nil, "service not registered"
     end
     if config[svc].depends then
       for i, v in ipairs(config[svc].depends) do
@@ -153,6 +153,7 @@ do
       func = ok,
     }
     running[svc] = pid
+    return true
   end
   
   function sv.down(svc)
@@ -198,7 +199,7 @@ do
         if not ok and err then
           rf.log(rf.prefix.red, "script FAIL: ", k, ": ", err)
         else
-          rf.log(rf.prefix.yellow, "script FINISH: ", k)
+          rf.log(rf.prefix.yellow, "script DONE: ", k)
         end
       end
     end

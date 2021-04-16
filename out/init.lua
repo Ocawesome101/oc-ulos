@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.02"
+  k._VERSION = "2021.04.16"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -261,6 +261,8 @@ do
     gpu.set(self.cx, self.cy, c)
     gpu.setForeground(self.fg)
     gpu.setBackground(self.bg)
+    -- lazily convert tabs
+    str = str:gsub("\t", "  ")
     while #str > 0 do
       if self.in_esc then
         local esc_end = str:find("[a-zA-Z]")
@@ -938,10 +940,27 @@ do
     return nil, "invalid password"
   end
 
-  function api.exec_as(uid, pass, func)
+  function api.exec_as(uid, pass, func, pname, wait)
     checkArg(1, uid, "number")
     checkArg(2, pass, "string")
     checkArg(3, func, "function")
+    checkArg(4, pname, "string", "nil")
+    checkArg(5, wait, "boolean", "nil")
+    if not k.acl.user_has_permission(k.scheduler.info().owner,
+        k.acl.permissions.user.SUDO) then
+      return nil, "permission denied: no permission"
+    end
+    if not api.authenticate(uid, pass) then
+      return nil, "permission denied: bad login"
+    end
+    local new = {
+      func = func,
+      name = pname or tostring(func),
+      owner = uid,
+    }
+    local p = k.scheduler.spawn(new)
+    if not wait then return end
+    return k.userspace.package.loaded.process.await(p.pid)
   end
 
   function api.get_uid(uname)
@@ -1448,7 +1467,8 @@ do
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      mounted[path]=(device.node.getLabel and device.node.getLabel())or "unknown"
+      -- this line is very crunched to fit in 80 characters :P
+      mounted[path]=(device.node.getLabel and device.node.getLabel())or"unknown"
     end
     return true
   end
@@ -1854,11 +1874,11 @@ do
     checkArg(1, file, "string")
     local ok, err = loadfile(file)
     if not ok then
-      error(err)
+      error(err, 0)
     end
     local stat, ret = xpcall(ok, debug.traceback)
     if not stat and ret then
-      error(ret)
+      error(ret, 0)
     end
     return ret
   end
@@ -1893,7 +1913,8 @@ do
       setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
     }
     for f, v in pairs(computer) do
-      k.userspace.package.loaded.computer[f] = k.userspace.package.loaded.computer[f] or v
+      k.userspace.package.loaded.computer[f] =
+        k.userspace.package.loaded.computer[f] or v
     end
     k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
     k.userspace.package.loaded.filesystem = k.util.copy_table(k.fs.api)
@@ -1913,11 +1934,49 @@ do
   local old_type = type
   function _G.type(obj)
     if old_type(obj) == "table" then
-      local mt = getmetatable(obj) or {}
+      local s, mt = pcall(getmetatable, obj)
+      if not s and mt then
+        -- getting the metatable failed, so it's protected.
+        -- instead, we should tostring() it - if the __name
+        -- field is set, we can let the Lua VM get the
+        -- """type""" for us.
+        local t = tostring(obj):gsub(" [%x+]$", "")
+        return t
+      end
+      -- either there is a metatable or ....not. If
+      -- we have gotten this far, the metatable was
+      -- at least not protected, so we can carry on
+      -- as normal.  And yes, i have put waaaay too
+      -- much effort into making this comment close
+      -- to being a rectangular box :)
+      mt = mt or {}
       return mt.__name or mt.__type or old_type(obj)
     else
       return old_type(obj)
     end
+  end
+
+  -- ok time for cursed shit: aliasing one type to another
+  -- i will at least blacklist the default Lua types
+  local cannot_alias = {
+    string = true,
+    number = true,
+    boolean = true,
+    ["nil"] = true,
+    ["function"] = true,
+    table = true,
+    userdata = true
+  }
+  local defs = {}
+  -- ex. typedef("number", "int")
+  function _G.typedef(t1, t2)
+    checkArg(1, t1, "string")
+    checkArg(2, t2, "string")
+    if cannot_alias[t2] then
+      error("attempt to override default type")
+    end
+    defs[t2] = t1
+    return true
   end
 
   -- copied from machine.lua
@@ -1927,7 +1986,7 @@ do
       if not want then
         return false
       else
-        return have == want or check(...)
+        return have == want or defs[want] == have or check(...)
       end
     end
     if not check(...) then
@@ -1936,6 +1995,174 @@ do
       error(msg, 2)
     end
   end
+end
+
+
+-- fairly efficient binary structs
+-- note that to make something unsigned you ALWAYS prefix the type def with
+-- 'u' rather than 'unsigned ' due to Lua syntax limitations.
+-- ex:
+-- local example = struct {
+--   uint16("field_1"),
+--   string[8]("field_2")
+-- }
+-- local copy = example "\0\14A string"
+
+k.log(k.loglevels.info, "ksrc/struct")
+
+do
+  -- step 1: change the metatable of _G so we can have convenient type notation
+  -- without technically cluttering _G
+  local gmt = {}
+  
+  local types = {
+    int = "i",
+    uint = "I",
+    bool = "b", -- currently booleans are just signed 8-bit values because reasons
+    short = "h",
+    ushort = "H",
+    long = "l",
+    ulong = "L",
+    size_t = "T",
+    float = "f",
+    double = "d",
+    lpstr = "s",
+  }
+
+  -- char is a special case:
+  --   - the user may want a single byte (char("field"))
+  --   - the user may also want a fixed-length string (char[42]("field"))
+  local char = {}
+  setmetatable(char, {
+    __call = function(field)
+      return {fmtstr = "B", field = field}
+    end,
+    __index = function(t, k)
+      if type(k) == "number" then
+        return function(value)
+          return {fmtstr = "c" .. k, field = value}
+        end
+      else
+        error("invalid char length specifier")
+      end
+    end
+  })
+
+  function gmt.__index(t, k)
+    if k == "char" then
+      return char
+    else
+      local tp
+      for t, v in pairs(types) do
+        local match = k:match("^"..t)
+        if match then tp = t break end
+      end
+      if not tp then return nil end
+      return function(value)
+        return {fmtstr = types[tp] .. tonumber(k:match("%d+$") or "0")//8,
+          field = value}
+      end
+    end
+  end
+
+  -- step 2: change the metatable of string so we can have string length
+  -- notation.  Note that this requires a null-terminated string.
+  local smt = {}
+
+  function smt.__index(t, k)
+    if type(k) == "number" then
+      return function(value)
+        return {fmtstr = "z", field = value}
+      end
+    end
+  end
+
+  -- step 3: apply these metatable hacks
+  setmetatable(_G, gmt)
+  setmetatable(string, smt)
+
+  -- step 4: ???
+
+  -- step 5: profit
+
+  function struct(fields, name)
+    checkArg(1, fields, "table")
+    checkArg(2, name, "string", "nil")
+    local pat = "<"
+    local args = {}
+    for i=1, #fields, 1 do
+      local v = fields[i]
+      pat = pat .. v.fmtstr
+      args[i] = v.field
+    end
+  
+    return setmetatable({}, {
+      __call = function(_, data)
+        assert(type(data) == "string" or type(data) == "table",
+          "bad argument #1 to struct constructor (string or table expected)")
+        if type(data) == "string" then
+          local set = table.pack(string.unpack(pat, data))
+          local ret = {}
+          for i=1, #args, 1 do
+            ret[args[i]] = set[i]
+          end
+          return ret
+        elseif type(data) == "table" then
+          local set = {}
+          for i=1, #args, 1 do
+            set[i] = data[args[i]]
+          end
+          return string.pack(pat, table.unpack(set))
+        end
+      end,
+      __len = function()
+        return string.packsize(pat)
+      end,
+      __name = name or "struct"
+    })
+  end
+
+end
+
+
+-- system log API hook for userspace
+
+k.log(k.loglevels.info, "base/syslog")
+
+do
+  local mt = {
+    __name = "syslog"
+  }
+
+  local syslog = {}
+  local open = {}
+
+  function syslog.open(pname)
+    checkArg(1, pname, "string", "nil")
+    pname = pname or k.scheduler.info().name
+    open[n] = pname
+    return n
+  end
+
+  function syslog.write(n, ...)
+    checkArg(1, n, "number")
+    if not open[n] then
+      return nil, "bad file descriptor"
+    end
+    k.log(open[n] .. ":", ...)
+  end
+
+  function syslog.close(n)
+    checkArg(1, n, "number")
+    if not open[n] then
+      return nil, "bad file descriptor"
+    end
+    open[n] = nil
+  end
+
+  k.hooks.add("sandbox", function()
+    k.userspace.package.loaded.syslog = syslog
+  end)
 end
 
 
@@ -2101,9 +2328,9 @@ do
       parent = parent.pid or 0,
       stdin = parent.stdin or args.stdin,
       stdout = parent.stdout or args.stdout,
-      input = args.input,
-      output = args.output,
-      owner = parent.owner or 0,
+      input = args.input or parent.stdin,
+      output = args.output or parent.stdout,
+      owner = args.owner or parent.owner or 0,
     }
     new:add_thread(args.func)
     processes[new.pid] = new
@@ -2120,6 +2347,7 @@ do
     end
     local info = {
       pid = proc.pid,
+      name = proc.name,
       waiting = proc.waiting,
       stopped = proc.stopped,
       deadline = proc.deadline,
@@ -2133,6 +2361,7 @@ do
         push_signal = proc.push_signal,
         pull_signal = proc.pull_signal,
         io = proc.io,
+        self = proc,
         handles = proc.handles,
         coroutine = proc.coroutine
       }
@@ -2258,6 +2487,21 @@ do
       end
       table.sort(pr)
       return pr
+    end
+
+    -- this is not provided at the kernel level
+    -- largely because there is no real use for it
+    -- returns: exit status, exit message
+    function p.await(pid)
+      checkArg(1, pid, "number")
+      local signal = {}
+      if not processes[pid] then
+        return nil, "no such process"
+      end
+      repeat
+        signal = table.pack(coroutine.yield())
+      until signal[1] == "process_died" and signal[2] == pid
+      return signal[3], signal[4]
     end
     
     p.info = api.info
