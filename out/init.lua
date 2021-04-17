@@ -36,7 +36,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.16"
+  k._VERSION = "2021.04.17"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -667,6 +667,11 @@ do
       ret = string.format("%s%02x", ret, string.byte(char))
     end
     return ret
+  end
+
+  -- lassert: local assert
+  function util.lassert(a, ...)
+    if not a then error(..., 0) else return a, ... end
   end
 
   k.util = util
@@ -2171,6 +2176,10 @@ end
 k.log(k.loglevels.info, "base/thread")
 
 do
+  local function handler(err)
+    return debug.traceback(err, 3)
+  end
+
   local old_coroutine = coroutine
   local _coroutine = {}
   _G.coroutine = _coroutine
@@ -2178,7 +2187,7 @@ do
     checkArg(1, func, "function")
     return setmetatable({
       __thread = old_coroutine.create(function()
-        return select(2, assert(xpcall(func, debug.traceback)))
+        return select(2, k.util.lassert(xpcall(func, handler)))
       end)
     },
     {

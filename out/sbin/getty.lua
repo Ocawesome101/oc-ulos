@@ -1,3 +1,3 @@
 -- getty implementation --
 
-local udev = require("udev")
+local sysfs = require("sysfs")
