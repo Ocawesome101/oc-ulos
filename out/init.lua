@@ -19,8 +19,10 @@ do
 
   for i=1, orig_args.n, 1 do
     local arg = orig_args[i]
+    
     if arg:match(arg_pattern) then
       local k, v = arg:match(arg_pattern)
+    
       if k and v then
         k.cmdline[k] = tonumber(v) or v
       end
@@ -67,6 +69,7 @@ do
   local function pop(str, n)
     local ret = str:sub(1, n)
     local also = str:sub(#ret + 1, -1)
+ 
     return also, ret
   end
 
@@ -514,13 +517,16 @@ do
 
   function computer.pullSignal(timeout)
     checkArg(1, timeout, "number", "nil")
+    
     local sig = table.pack(pull(timeout))
     if sig.n == 0 then return nil end
+    
     for _, v in pairs(handlers) do
       if v.signal == sig[1] then
         v.callback(table.unpack(sig))
       end
     end
+    
     return table.unpack(sig)
   end
 
@@ -528,6 +534,7 @@ do
   function event.register(sig, call)
     checkArg(1, sig, "string")
     checkArg(2, call, "function")
+    
     n = n + 1
     handlers[n] = {signal=sig,callback=call}
     return n
@@ -561,6 +568,7 @@ do
   local function safe_concat(...)
     local args = table.pack(...)
     local msg = ""
+  
     for i=1, args.n, 1 do
       msg = string.format("%s%s ", msg, tostring(args[i]))
     end
@@ -569,9 +577,11 @@ do
 
   if lgpu and lscr then
     k.logio = k.create_tty(lgpu, lscr)
+    
     function k.log(level, ...)
       local msg = safe_concat(...)
       msg = msg:gsub("\t", "  ")
+    
       if (tonumber(k.cmdline.loglevel) or 1) <= level then
         k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
           msg))
@@ -586,20 +596,27 @@ do
 
   local raw_pullsignal = computer.pullSignalOld
   computer.pullSignalOld = nil
+  
   function k.panic(...)
     local msg = safe_concat(...)
+  
     computer.beep(440, 0.25)
     computer.beep(380, 0.25)
+    
     k.log(k.loglevels.panic, "-- \27[31mbegin stacktrace\27[37m --")
+    
     local traceback = debug.traceback(msg, 2)
       :gsub("\t", "  ")
       :gsub("([^\n]+):(%d+):", "\27[36m%1\27[37m:\27[35m%2\27[37m:")
       :gsub("'([^']+)'\n", "\27[33m'%1'\27[37m\n")
+    
     for line in traceback:gmatch("[^\n]+") do
       k.log(k.loglevels.panic, line)
     end
+
     k.log(k.loglevels.panic, "-- \27[31mend stacktrace\27[37m --")
     k.log(k.loglevels.panic, "\27[33m!! \27[31mPANIC\27[33m !!\27[37m")
+    
     while true do raw_pullsignal() end
   end
 end
@@ -614,14 +631,18 @@ k.log(k.loglevels.info, "base/hooks")
 do
   local hooks = {}
   k.hooks = {}
+  
   function k.hooks.add(name, func)
     checkArg(1, name, "string")
     checkArg(2, func, "function")
+  
     hooks[name] = hooks[name] or {}
     table.insert(hooks[name], func)
   end
 
   function k.hooks.call(name, ...)
+    checkArg(1, name, "string")
+
     if hooks[name] then
       for k, v in ipairs(hooks[name]) do
         v(...)
@@ -637,18 +658,21 @@ k.log(k.loglevels.info, "base/util")
 
 do
   local util = {}
+  
   function util.merge_tables(a, b)
     for k, v in pairs(b) do
       if not a[k] then
         a[k] = v
       end
     end
+  
     return a
   end
 
   -- here we override rawset() in order to properly protect tables
   local _rawset = rawset
   local blacklist = setmetatable({}, {__mode = "k"})
+  
   function _G.rawset(t, k, v)
     if not blacklist[t] then
       return _rawset(t, k, v)
@@ -670,6 +694,7 @@ do
       __pairs = tbl,
       __metatable = {}
     }
+  
     return setmetatable(new, mt)
   end
 
@@ -678,7 +703,7 @@ do
   -- this is a bit like util.protect except tables are still writable
   -- even i still don't fully understand how this works, but it works
   -- nonetheless
-  --[[
+  --[[disabled due to some issues i was having
   if computer.totalMemory() < 262144 then
     -- if we have 256k or less memory, use the mem-friendly function
     function util.copy_table(tbl)
@@ -712,20 +737,24 @@ do
       copies = copies or {}
       local orig_type = type(orig)
       local copy
+    
       if orig_type == 'table' then
         if copies[orig] then
           copy = copies[orig]
         else
           copy = {}
           copies[orig] = copy
+      
           for orig_key, orig_value in next, orig, nil do
             copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
           end
+          
           setmetatable(copy, deepcopy(getmetatable(orig), copies))
         end
       else -- number, string, boolean, etc
         copy = orig
       end
+
       return copy
     end
 
@@ -736,13 +765,16 @@ do
 
   function util.to_hex(str)
     local ret = ""
+    
     for char in str:gmatch(".") do
       ret = string.format("%s%02x", ret, string.byte(char))
     end
+    
     return ret
   end
 
   -- lassert: local assert
+  -- removes the "init:123" from errors (fires at level 0)
   function util.lassert(a, ...)
     if not a then error(..., 0) else return a, ... end
   end
@@ -762,6 +794,8 @@ k.security = {}
 
 k.log(k.loglevels.info, "base/security/users")
 
+
+-- from https://github.com/philanc/plc iirc
 
 k.log(k.loglevels.info, "base/security/sha3.lua")
 
@@ -999,22 +1033,29 @@ do
 
   function api.prime(data)
     checkArg(1, data, "table")
+ 
     k.userspace.package.loaded.users.prime = nil
     passwd = data
+    
     return true
   end
 
   function api.authenticate(uid, pass)
     checkArg(1, uid, "number")
     checkArg(2, pass, "string")
+    
     pass = k.util.to_hex(pass)
+    
     local udata = passwd[uid]
+    
     if not udata then
       return nil, "no such user"
     end
+    
     if pass == udata.pass then
       return true
     end
+    
     return nil, "invalid password"
   end
 
@@ -1024,39 +1065,51 @@ do
     checkArg(3, func, "function")
     checkArg(4, pname, "string", "nil")
     checkArg(5, wait, "boolean", "nil")
+    
     if not k.acl.user_has_permission(k.scheduler.info().owner,
         k.acl.permissions.user.SUDO) then
       return nil, "permission denied: no permission"
     end
+    
     if not api.authenticate(uid, pass) then
       return nil, "permission denied: bad login"
     end
+    
     local new = {
       func = func,
       name = pname or tostring(func),
       owner = uid,
     }
+    
     local p = k.scheduler.spawn(new)
+    
     if not wait then return end
+
+    -- this is the only spot in the ENTIRE kernel where process.await is used
     return k.userspace.package.loaded.process.await(p.pid)
   end
 
   function api.get_uid(uname)
     checkArg(1, uname, "string")
+    
     for uid, udata in pairs(passwd) do
       if udata.name == uname then
         return uid
       end
     end
+    
     return nil, "no such user"
   end
 
   function api.attributes(uid)
     checkArg(1, uid, "number")
+    
     local udata = passwd[uid]
+    
     if not udata then
       return nil, "no such user"
     end
+    
     return {
       name = udata.name,
       home = udata.home,
@@ -1099,8 +1152,8 @@ do
       OTHER_WRITE = 128,
       OTHER_EXEC = 256
     }
-    
   }
+
   local acl = {}
 
   acl.permissions = permissions
@@ -1108,16 +1161,20 @@ do
   function acl.user_has_permission(uid, permission)
     checkArg(1, uid, "number")
     checkArg(2, permission, "number")
+  
     local attributes, err = k.security.users.attributes(uid)
+    
     if not attributes then
       return nil, err
     end
+    
     return acl.has_permission(attributes.acls, permission)
   end
 
   function acl.has_permission(perms, permission)
     checkArg(1, perms, "number")
     checkArg(2, permission, "number")
+    
     return perms & permission ~= 0
   end
 
@@ -1132,6 +1189,7 @@ k.log(k.loglevels.info, "base/shutdown")
 
 do
   local shutdown = computer.shutdown
+  
   function k.shutdown(rbt)
     k.is_shutting_down = true
     k.hooks.call("shutdown", rbt)
@@ -1148,12 +1206,14 @@ do
   function component.get(addr, mkpx)
     checkArg(1, addr, "string")
     checkArg(2, mkpx, "boolean", "nil")
+    
     local pat = string.format("^%s", addr:gsub("%-", "%%-"))
     for k, v in component.list() do
       if k:match(pat) then
         return mkpx and component.proxy(k) or k
       end
     end
+    
     return nil, "no such component"
   end
 
@@ -1163,6 +1223,7 @@ do
       if not addr then
         error(string.format("no component of type '%s'", k))
       end
+    
       return component.proxy(addr)
     end
   })
@@ -1201,6 +1262,7 @@ do
 
   local function split(path)
     local segments = {}
+    
     for seg in path:gmatch("[^/]+") do
       if seg == ".." then
         segments[#segments] = nil
@@ -1208,6 +1270,7 @@ do
         segments[#segments + 1] = seg
       end
     end
+    
     return segments
   end
 
@@ -1215,57 +1278,68 @@ do
 
   -- "clean" a path
   local function clean(path)
-    return table.concat(
-      split(
-        path
-      ), "/"
-    )
+    return table.concat(split(path), "/")
   end
 
   local faux = {children = mounts}
   local resolving = {}
-  local resolve
-  resolve = function(path)
+
+  local function resolve(path)
     if resolving[path] then
       return nil, "recursive mount detected"
     end
+    
     path = clean(path)
     resolving[path] = true
+    
     local current, parent = faux
+    
     if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
+    
     if current.children[path] then
       return current.children[path]
     end
+    
     local segments = split(path)
     table.insert(segments, 1, "/")
+    
     local base_n = 1 -- we may have to traverse multiple mounts
+    
     for i=1, #segments, 1 do
       local try = table.concat(segments, "/", base_n, i)
+    
       if current.children[try] then
         base_n = i -- we are now at this stage of the path
         local next_node = current.children[try]
+      
         if type(next_node) == "string" then
           local err
           next_node, err = resolve(next_node)
+        
           if not next_node then
             resolving[path] = false
             return nil, err
           end
         end
+        
         parent = current
         current = next_node
       elseif not current.node:stat(try) then
         resolving[path] = false
+
         return nil, fs.errors.file_not_found
       end
     end
+    
     resolving[path] = false
     local ret = "/"..table.concat(segments, "/", base_n, #segments)
+    
     if must_exist and not current.node:exists(ret) then
       return nil, fs.errors.file_not_found
     end
+    
     return current, parent, ret
   end
 
@@ -1280,9 +1354,12 @@ do
   end
 
   function _managed:stat(file)
+    checkArg(1, file, "string")
+
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
+    
     return {
       permissions = self:info().read_only and 365 or 511,
       isDirectory = self.node.isDirectory(file),
@@ -1296,49 +1373,62 @@ do
   function _managed:touch(file, ftype)
     checkArg(1, file, "string")
     checkArg(2, ftype, "number", "nil")
+    
     if self.node.isReadOnly() then
       return nil, fs.errors.read_only
     end
+    
     if self.node.exists(file) then
       return nil, fs.errors.file_exists
     end
+    
     if ftype == fs.types.file or not ftype then
       local fd = self.node.open(file, "w")
+    
       if not fd then
         return nil, fs.errors.failed_write
       end
+      
       self.node.write(fd, "")
       self.node.close(fd)
     elseif ftype == fs.types.directory then
       local ok, err = self.node.makeDirectory(file)
+      
       if not ok then
         return nil, err or "unknown error"
       end
     elseif ftype == fs.types.link then
       return nil, "unsupported operation"
     end
+    
     return true
   end
   
   function _managed:remove(file)
     checkArg(1, file, "string")
+    
     if not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
+    
     if self.node.isDirectory(file) and #(self.node.list(file) or {}) > 0 then
       return nil, fs.errors.is_a_directory
     end
+    
     return self.node.remove(file)
   end
 
   function _managed:list(path)
     checkArg(1, path, "string")
+    
     if not self.node.exists(path) then
       return nil, fs.errors.file_not_found
     elseif not self.node.isDirectory(path) then
       return nil, fs.errors.not_a_directory
     end
+    
     local files = self.node.list(path) or {}
+    
     return files
   end
   
@@ -1361,9 +1451,11 @@ do
   function _managed:open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
+    
     if (mode == "r" or mode == "a") and not self.node.exists(file) then
       return nil, fs.errors.file_not_found
     end
+    
     local fd = {
       fd = self.node.open(file, mode or "r"),
       node = self.node,
@@ -1372,41 +1464,46 @@ do
       seek = fseek,
       close = fclose
     }
+    
     return fd
   end
   
   local fs_mt = {__index = _managed}
   local function create_node_from_managed(proxy)
-    return setmetatable({
-      node = proxy
-    }, fs_mt)
+    return setmetatable({node = proxy}, fs_mt)
   end
 
   local function create_node_from_unmanaged(proxy)
     local fs_superblock = proxy.readSector(1)
+    
     for k, v in pairs(registered.filesystems) do
       if v.is_valid_superblock(superblock) then
         return v.new(proxy)
       end
     end
+    
     return nil, "no compatible filesystem driver available"
   end
 
   fs.PARTITION_TABLE = "partition_tables"
   fs.FILESYSTEM = "filesystems"
+  
   function fs.register(category, driver)
     if not registered[category] then
       return nil, "no such category: " .. category
     end
+  
     table.insert(registered[category], driver)
     return true
   end
 
   function fs.get_partition_table_driver(filesystem)
     checkArg(1, filesystem, "string", "table")
+    
     if type(filesystem) == "string" then
       filesystem = component.proxy(filesystem)
     end
+    
     if filesystem.type == "filesystem" then
       return nil, "managed filesystem has no partition table"
     else -- unmanaged drive - perfect
@@ -1416,14 +1513,17 @@ do
         end
       end
     end
+    
     return nil, "no compatible partition table driver available"
   end
 
   function fs.get_filesystem_driver(filesystem)
     checkArg(1, filesystem, "string", "table")
+    
     if type(filesystem) == "string" then
       filesystem = component.proxy(filesystem)
     end
+    
     if filesystem.type == "filesystem" then
       return create_node_from_managed(filesystem)
     else
@@ -1433,23 +1533,28 @@ do
 
   -- actual filesystem API now
   fs.api = {}
+  
   function fs.api.open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
+  
     local node, err, path = resolve(file)
     if not node then
       return nil, err
     end
+    
     mode = mode or "r"
     local data = node.node:stat(path)
     local user = (k.scheduler.info() or {owner=0}).owner
     -- TODO: groups
+    
     if data.owner ~= user and not k.security.acl.user_has_permission(user,
                             k.security.acl.permissions.user.OPEN_UNOWNED) then
       return nil, "permission denied"
     else
       local perms = k.security.acl.permissions.file
       local rperm, wperm
+    
       if data.owner ~= user then
         rperm = perms.OTHER_READ
         wperm = perms.OTHER_WRITE
@@ -1457,6 +1562,7 @@ do
         rperm = perms.OWNER_READ
         wperm = perms.OWNER_WRITE
       end
+      
       if (mode == "r" and not
         k.security.acl.has_permission(data.permissions, rperm)) or
         ((mode == "w" or mode == "a") and not
@@ -1464,38 +1570,50 @@ do
         return nil, "permission denied"
       end
     end
+    
     return node.node:open(path, mode)
   end
 
   function fs.api.stat(file)
     checkArg(1, file, "string")
+    
     local node, err, path = resolve(file)
+    
     if not node then
       return false
     end
+    
     return node.node:stat(file)
   end
 
   function fs.api.touch(file, ftype)
     checkArg(1, file, "string")
     checkArg(2, ftype, "number", "nil")
+    
     ftype = ftype or fs.types.file
+    
     local root, base = file:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     base = base or file
+    
     local node, err, path = resolve(root)
+    
     if not node then
       return nil, err
     end
+    
     return node.node:touch(path .. "/" .. base, ftype)
   end
 
   function fs.api.remove(file)
     checkArg(1, file, "string")
+    
     local node, err, pack = resolve(root)
+    
     if not node then
       return nil, err
     end
+    
     return node.node:remove(file)
   end
 
@@ -1506,6 +1624,7 @@ do
     NODE = 1,
     OVERLAY = 2,
   }
+  
   function fs.api.mount(node, fstype, path)
     checkArg(1, node, "string", "table")
     checkArg(2, fstype, "number")
@@ -1567,17 +1686,23 @@ do
 
   function fs.api.umount(path)
     checkArg(1, path, "string")
+    
     path = clean(path)
+    
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
+    
     local node, err, rpath = resolve(root)
+    
     if not node then
       return nil, err
     end
+    
     local full = clean(string.format("%s/%s", rpath, fname))
     node.children[full] = nil
     mounted[path] = nil
+    
     return true
   end
 
@@ -1601,17 +1726,21 @@ k.log(k.loglevels.info, "base/stdlib/FILE*")
 
 do
   local buffer = {}
+ 
   function buffer:read_byte()
     if self.buffer_mode ~= "none" then
       if (not self.read_buffer) or #self.read_buffer == 0 then
         self.read_buffer = self.base:read(self.buffer_size)
       end
+  
       if not self.read_buffer then
         self.closed = true
         return nil
       end
+      
       local dat = self.read_buffer:sub(1,1)
       self.read_buffer = self.read_buffer:sub(2, -1)
+      
       return dat
     else
       return self.base:read(1)
@@ -1624,19 +1753,23 @@ do
         self.base:write(self.write_buffer)
         self.write_buffer = ""
       end
+      
       self.write_buffer = string.format("%s%s", self.write_buffer, byte)
     else
       return self.base:write(byte)
     end
+
     return true
   end
 
   function buffer:read_line()
     local line = ""
+    
     repeat
       local c = self:read_byte()
       line = string.format("%s%s", line, c or "")
     until c == "\n" or not c
+    
     return line
   end
 
@@ -1649,40 +1782,56 @@ do
 
   function buffer:read_formatted(fmt)
     checkArg(1, fmt, "string", "number")
-    --k.log(k.loglevels.info, "FMTREAD", fmt)
+    
     if type(fmt) == "number" then
       local read = ""
+    
       repeat
         local byte = self:read_byte()
         read = string.format("%s%s", read, byte or "")
       until #read > fmt or not byte
+      
       return read
     else
       fmt = fmt:gsub("%*", ""):sub(1,1)
+      
       if #fmt == 0 or not valid[fmt] then
         error("bad argument to 'read' (invalid format)")
       end
+      
       if fmt == "l" or fmt == "L" then
         local line = self:read_line()
+      
         if fmt == "l" then
           line = line:sub(1, -2)
         end
+        
         return line
       elseif fmt == "a" then
         local read = ""
+        
         repeat
           local byte = self:read_byte()
           read = string.format("%s%s", read, byte or "")
         until not byte
+        
         return read
       elseif fmt == "n" then
         local read = ""
+        
         repeat
           local byte = self:read_byte()
-          read = string.format("%s%s", read, byte or "")
+          if not tonumber(byte) then
+            -- TODO: this breaks with no buffering
+            self.read_buffer = byte .. self.read_buffer
+          else
+            read = string.format("%s%s", read, byte or "")
+          end
         until not tonumber(byte)
+        
         return tonumber(read)
       end
+
       error("bad argument to 'read' (invalid format)")
     end
   end
@@ -1691,17 +1840,21 @@ do
     if self.closed or not self.mode.r then
       return nil, "bad file descriptor"
     end
+    
     local args = table.pack(...)
     if args.n == 0 then args[1] = "l" args.n = 1 end
+    
     local read = {}
     for i=1, args.n, 1 do
       read[i] = self:read_formatted(args[i])
     end
+    
     return table.unpack(read)
   end
 
   function buffer:lines(format)
     format = format or "l"
+    
     return function()
       return self:read(format)
     end
@@ -1711,30 +1864,39 @@ do
     if self.closed then
       return nil, "bad file descriptor"
     end
+    
     local args = table.pack(...)
     local write = ""
+    
     for i=1, #args, 1 do
       checkArg(i, args[i], "string", "number")
+    
       args[i] = tostring(args[i])
       write = string.format("%s%s", write, args[i])
     end
+    
     if self.buffer_mode == "none" then
       -- a-ha! performance shortcut!
+      -- because writing in a chunk is much faster
       return self.base:write(write)
     end
+
     for i=1, #write, 1 do
       local char = write:sub(i,i)
       self:write_byte(char)
     end
+
     return true
   end
 
   function buffer:seek(whence, offset)
     checkArg(1, whence, "string")
     checkArg(2, offset, "number")
+    
     if self.closed then
       return nil, "bad file descriptor"
     end
+    
     self:flush()
     return self.base:seek()
   end
@@ -1743,10 +1905,12 @@ do
     if self.closed then
       return nil, "bad file descriptor"
     end
+    
     if #self.write_buffer > 0 then
       self.base:write(self.write_buffer)
       self.write_buffer = ""
     end
+    
     return true
   end
 
@@ -1757,11 +1921,14 @@ do
 
   local fmt = {
     __index = buffer,
+    -- __metatable = {},
     __name = "FILE*"
   }
+
   function k.create_fstream(base, mode)
     checkArg(1, base, "table")
     checkArg(2, mode, "string")
+  
     local new = {
       base = base,
       buffer_size = 512,
@@ -1771,9 +1938,11 @@ do
       closed = false,
       mode = {}
     }
+    
     for c in mode:gmatch(".") do
       new.mode[c] = true
     end
+    
     setmetatable(new, fmt)
     return new
   end
@@ -1786,12 +1955,15 @@ k.log(k.loglevels.info, "base/stdlib/io")
 
 do
   local fs = k.fs.api
+ 
   local mt = {
     __index = function(t, k)
       local info = k.scheduler.info()
+  
       if info.data.io[k] then
         return info.data.io[k]
       end
+      
       return nil
     end,
     __newindex = function(t, k, v)
@@ -1801,19 +1973,26 @@ do
   }
 
   _G.io = {}
+  
   function io.open(file, mode)
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
+  
     mode = mode or "r"
+    
     local handle, err = fs.open(file, mode)
     if not handle then
       return nil, err
     end
+    
     return k.create_fstream(handle, mode)
   end
 
   -- popen should be defined in userspace so the shell can handle it
   -- tmpfile should be defined in userspace also
+  -- it turns out that defining things PUC Lua can pass off to the shell
+  -- *when you don't have a shell* is rather difficult and so, instead of
+  -- weird hacks like in Paragon or Monolith, I just leave it up to userspace.
   function io.popen()
     return nil, "io.popen unsupported at kernel level"
   end
@@ -1832,18 +2011,26 @@ do
 
   function io.lines(file, fmt)
     file = file or io.stdin
+
     if type(file) == "string" then
       file = assert(io.open(file, "r"))
     end
+    
+    checkArg(1, file, "FILE*")
+    
     return file:lines(fmt)
   end
 
   local function stream(kk)
     return function(v)
+      if v then checkArg(1, v, "FILE*") end
+
       local t = k.scheduler.info().data.io
+    
       if v then
         t[kk] = v
       end
+      
       return t[kk]
     end
   end
@@ -1853,24 +2040,32 @@ do
 
   function io.type(stream)
     assert(stream, "bad argument #1 (value expected)")
-    if tostring(stream):match("FILE") then
+    
+    if type(stream) == "FILE*" then
       if stream.closed then
         return "closed file"
       end
+    
       return "file"
     end
+
     return nil
   end
 
   function io.flush(s)
     s = s or io.stdout
+    checkArg(1, s, "FILE*")
+
     return s:flush()
   end
 
   function io.close(stream)
+    checkArg(1, stream, "FILE*")
+
     if stream == io.stdin or stream == io.stdout or stream == io.stderr then
       return nil, "cannot close standard file"
     end
+    
     return stream:close()
   end
 
@@ -1878,9 +2073,11 @@ do
 
   function _G.print(...)
     local args = table.pack(...)
+   
     for i=1, args.n, 1 do
       args[i] = tostring(args[i])
     end
+    
     return io.write(table.concat(args, "  ", 1, args.n), "\n")
   end
 end
@@ -1892,6 +2089,7 @@ k.log(k.loglevels.info, "base/stdlib/package")
 
 do
   _G.package = {}
+ 
   local loaded = {
     os = os,
     io = io,
@@ -1902,13 +2100,16 @@ do
     sha3 = k.sha3,
     unicode = unicode
   }
+  
   package.loaded = loaded
   package.path = "/lib/?.lua;/lib/lib?.lua;/lib/?/init.lua"
+  
   local fs = k.fs.api
 
   local function libError(name, searched)
     local err = "module '%s' not found:\n\tno field package.loaded['%s']"
     err = err .. ("\n\tno file '%s'"):rep(#searched)
+  
     return string.format(err, name, name, table.unpack(searched))
   end
 
@@ -1917,17 +2118,24 @@ do
     checkArg(2, path, "string")
     checkArg(3, sep, "string", "nil")
     checkArg(4, rep, "string", "nil")
+    
     sep = "%" .. (sep or ".")
     rep = rep or "/"
+    
     local searched = {}
+    
     name = name:gsub(sep, rep)
+    
     for search in path:gmatch("[^;]+") do
       search = search:gsub("%?", name)
+    
       if fs.stat(search) then
         return search
       end
+      
       searched[#searched + 1] = search
     end
+
     return nil, libError(name, searched)
   end
 
@@ -1938,13 +2146,17 @@ do
       __index = function(tbl, key)
         setmetatable(lib, nil)
         setmetatable(lib.internal or {}, nil)
+        ; -- this is just in case, because Lua is weird
         (k.userspace.dofile or dofile)(file)
+    
         return tbl[key]
       end
     }
+
     if lib.internal then
       setmetatable(lib.internal, mt)
     end
+    
     setmetatable(lib, mt)
   end
 
@@ -1953,50 +2165,62 @@ do
     checkArg(1, file, "string")
     checkArg(2, mode, "string", "nil")
     checkArg(3, env, "table", "nil")
+    
     local handle, err = io.open(file, "r")
     if not handle then
       return nil, err
     end
+    
     local data = handle:read("a")
     handle:close()
+    
     return load(data, "="..file, "bt", k.userspace or _G)
   end
 
   function _G.dofile(file)
     checkArg(1, file, "string")
+    
     local ok, err = loadfile(file)
     if not ok then
       error(err, 0)
     end
+    
     local stat, ret = xpcall(ok, debug.traceback)
     if not stat and ret then
       error(ret, 0)
     end
+    
     return ret
   end
 
   local k = k
   k.hooks.add("sandbox", function()
     k.userspace.k = nil
+    
     local acl = k.security.acl
     local perms = acl.permissions
+    
     local function wrap(f, p)
       return function(...)
         if not acl.user_has_permission(k.scheduler.info().owner,
             p) then
           error("permission denied")
         end
+    
         return f(...)
       end
     end
+
     k.userspace.component = nil
     k.userspace.computer = nil
     k.userspace.unicode = nil
     k.userspace.package.loaded.component = {}
+    
     for f,v in pairs(component) do
       k.userspace.package.loaded.component[f] = wrap(v,
         perms.user.COMPONENTS)
     end
+    
     k.userspace.package.loaded.computer = {
       getDeviceInfo = wrap(computer.getDeviceInfo, perms.user.HWINFO),
       setArchitecture = wrap(computer.setArchitecture, perms.user.SETARCH),
@@ -2004,12 +2228,15 @@ do
       removeUser = wrap(computer.removeUser, perms.user.MANAGE_USERS),
       setBootAddress = wrap(computer.setBootAddress, perms.user.BOOTADDR)
     }
+    
     for f, v in pairs(computer) do
       k.userspace.package.loaded.computer[f] =
         k.userspace.package.loaded.computer[f] or v
     end
+    
     k.userspace.package.loaded.unicode = k.util.copy_table(unicode)
     k.userspace.package.loaded.filesystem = k.util.copy_table(k.fs.api)
+    
     local ufs = k.userspace.package.loaded.filesystem
     ufs.mount = wrap(k.fs.api.mount, perms.user.MOUNT)
     ufs.umount = wrap(k.fs.api.umount, perms.user.MOUNT)
@@ -2027,6 +2254,7 @@ do
   function _G.type(obj)
     if old_type(obj) == "table" then
       local s, mt = pcall(getmetatable, obj)
+      
       if not s and mt then
         -- getting the metatable failed, so it's protected.
         -- instead, we should tostring() it - if the __name
@@ -2035,13 +2263,15 @@ do
         local t = tostring(obj):gsub(" [%x+]$", "")
         return t
       end
+       
       -- either there is a metatable or ....not. If
       -- we have gotten this far, the metatable was
       -- at least not protected, so we can carry on
       -- as normal.  And yes, i have put waaaay too
-      -- much effort into making this comment close
-      -- to being a rectangular box :)
+      -- much effort into making this comment be
+      -- almost a rectangular box :)
       mt = mt or {}
+ 
       return mt.__name or mt.__type or old_type(obj)
     else
       return old_type(obj)
@@ -2060,20 +2290,25 @@ do
     userdata = true
   }
   local defs = {}
+  
   -- ex. typedef("number", "int")
   function _G.typedef(t1, t2)
     checkArg(1, t1, "string")
     checkArg(2, t2, "string")
+  
     if cannot_alias[t2] then
       error("attempt to override default type")
     end
+    
     defs[t2] = t1
+    
     return true
   end
 
   -- copied from machine.lua
   function _G.checkArg(n, have, ...)
     have = type(have)
+    
     local function check(want, ...)
       if not want then
         return false
@@ -2081,6 +2316,7 @@ do
         return have == want or defs[want] == have or check(...)
       end
     end
+    
     if not check(...) then
       local msg = string.format("bad argument #%d (%s expected, got %s)",
                                 n, table.concat(table.pack(...), " or "), have)
@@ -2090,7 +2326,7 @@ do
 end
 
 
--- fairly efficient binary structs
+-- binary struct
 -- note that to make something unsigned you ALWAYS prefix the type def with
 -- 'u' rather than 'unsigned ' due to Lua syntax limitations.
 -- ex:
@@ -2099,6 +2335,7 @@ end
 --   string[8]("field_2")
 -- }
 -- local copy = example "\0\14A string"
+-- yes, there is lots of metatable hackery behind the scenes
 
 k.log(k.loglevels.info, "ksrc/struct")
 
@@ -2145,11 +2382,14 @@ do
       return char
     else
       local tp
+  
       for t, v in pairs(types) do
         local match = k:match("^"..t)
         if match then tp = t break end
       end
+      
       if not tp then return nil end
+      
       return function(value)
         return {fmtstr = types[tp] .. tonumber(k:match("%d+$") or "0")//8,
           field = value}
@@ -2180,8 +2420,10 @@ do
   function struct(fields, name)
     checkArg(1, fields, "table")
     checkArg(2, name, "string", "nil")
+    
     local pat = "<"
     local args = {}
+    
     for i=1, #fields, 1 do
       local v = fields[i]
       pat = pat .. v.fmtstr
@@ -2192,18 +2434,23 @@ do
       __call = function(_, data)
         assert(type(data) == "string" or type(data) == "table",
           "bad argument #1 to struct constructor (string or table expected)")
+    
         if type(data) == "string" then
           local set = table.pack(string.unpack(pat, data))
           local ret = {}
+        
           for i=1, #args, 1 do
             ret[args[i]] = set[i]
           end
+          
           return ret
         elseif type(data) == "table" then
           local set = {}
+          
           for i=1, #args, 1 do
             set[i] = data[args[i]]
           end
+          
           return string.pack(pat, table.unpack(set))
         end
       end,
@@ -2213,7 +2460,6 @@ do
       __name = name or "struct"
     })
   end
-
 end
 
 
@@ -2231,29 +2477,35 @@ do
 
   function syslog.open(pname)
     checkArg(1, pname, "string", "nil")
+
     pname = pname or k.scheduler.info().name
     open[n] = pname
+    
     return n
   end
 
   function syslog.write(n, ...)
     checkArg(1, n, "number")
+    
     if not open[n] then
       return nil, "bad file descriptor"
     end
+    
     k.log(open[n] .. ":", ...)
   end
 
   function syslog.close(n)
     checkArg(1, n, "number")
+    
     if not open[n] then
       return nil, "bad file descriptor"
     end
+    
     open[n] = nil
   end
 
   k.hooks.add("sandbox", function()
-    k.userspace.package.loaded.syslog = syslog
+    k.userspace.package.loaded.syslog = k.util.copy_table(syslog)
   end)
 end
 
@@ -2270,14 +2522,15 @@ do
   local old_coroutine = coroutine
   local _coroutine = {}
   _G.coroutine = _coroutine
+  
   function _coroutine.create(func)
     checkArg(1, func, "function")
+  
     return setmetatable({
       __thread = old_coroutine.create(function()
         return select(2, k.util.lassert(xpcall(func, handler)))
       end)
-    },
-    {
+    }, {
       __index = _coroutine,
       __name = "thread"
     })
@@ -2285,7 +2538,9 @@ do
 
   function _coroutine.wrap(fnth)
     checkArg(1, fnth, "function", "thread")
+    
     if type(fnth) == "function" then fnth = _coroutine.create(fnth) end
+    
     return function(...)
       return select(2, fnth:resume(...))
     end
@@ -2320,27 +2575,36 @@ do
   function process:resume(...)
     for k, v in pairs(self.threads) do
       local result = table.pack(v:resume(...))
+  
       if v:status() == "dead" then
         self.threads[k] = nil
+      
         if not result[1] then
           self:push_signal("thread_died", v.id)
+        
           return nil, result[2]
         end
       end
     end
+
     if not next(self.threads) then
       self.dead = true
     end
+    
     return true
   end
 
   local id = 0
   function process:add_thread(func)
     checkArg(1, func, "function")
+    
     local new = coroutine.create(func)
+    
     id = id + 1
     new.id = id
+    
     self.threads[#self.threads + 1] = new
+    
     return id
   end
 
@@ -2349,6 +2613,7 @@ do
   end
 
   local c_pushSignal = computer.pushSignal
+  
   function process:push_signal(...)
     local signal = table.pack(...)
     table.insert(self.queue, signal)
@@ -2363,8 +2628,10 @@ do
   end
 
   local pid = 0
+  
   function k.create_process(args)
     pid = pid + 1
+  
     local new = setmetatable({
       name = args.name,
       pid = pid,
@@ -2384,11 +2651,14 @@ do
       cputime = 0,
       deadline = 0,
     }, proc_mt)
+    
     args.stdin, args.stdout, args.stderr,
                     args.input, args.output = nil, nil, nil
+    
     for k, v in pairs(args) do
       new[k] = v
     end
+    
     new.coroutine.status = function(self)
       if self.dead then
         return "dead"
@@ -2400,6 +2670,7 @@ do
         return "running"
       end
     end
+    
     return new
   end
 end
@@ -2418,7 +2689,9 @@ do
   function api.spawn(args)
     checkArg(1, args.name, "string")
     checkArg(2, args.func, "function")
+    
     local parent = processes[current or 0] or {}
+    
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
@@ -2428,19 +2701,25 @@ do
       output = args.output or parent.stdout,
       owner = args.owner or parent.owner or 0,
     }
+    
     new:add_thread(args.func)
     processes[new.pid] = new
+    
     if k.sysfs then k.sysfs.add_to("proc", new) end
+    
     return new
   end
 
   function api.info(pid)
     checkArg(1, pid, "number", "nil")
+    
     pid = pid or current
+    
     local proc = processes[pid]
     if not proc then
       return nil, "no such process"
     end
+
     local info = {
       pid = proc.pid,
       name = proc.name,
@@ -2452,6 +2731,7 @@ do
       cputime = proc.cputime,
       owner = proc.owner
     }
+    
     if proc.pid == current then
       info.data = {
         push_signal = proc.push_signal,
@@ -2462,16 +2742,22 @@ do
         coroutine = proc.coroutine
       }
     end
+    
     return info
   end
 
   function api.kill(proc)
     checkArg(1, proc, "number", "nil")
+    
     proc = proc or current.pid
+    
     if not processes[proc] then
       return nil, "no such process"
     end
+    
     processes[proc].dead = true
+    
+    return true
   end
 
   local pullSignal = computer.pullSignal
@@ -2480,53 +2766,66 @@ do
       local to_run = {}
       local going_to_run = {}
       local min_timeout = math.huge
+    
       for k, v in pairs(processes) do
         if not v.stopped then
           if v.deadline - computer.uptime() < min_timeout then
             min_timeout = v.deadline - computer.uptime()
           end
         end
+      
         if min_timeout <= 0 then
           min_timeout = 0
           break
         end
       end
+      
       --k.log(k.loglevels.info, min_timeout)
+      
       local sig = table.pack(pullSignal(min_timeout))
       for k, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
             not (v.stopped or going_to_run[v.pid]) then
           to_run[#to_run + 1] = v
+      
           if v.resume_next then
             to_run[#to_run + 1] = v.resume_next
             going_to_run[v.resume_next.pid] = true
           end
         end
       end
+
       for i, proc in ipairs(to_run) do
         local psig = sig
         current = i
+      
         if #proc.queue > 0 then -- the process has queued signals
           proc:push_signal(table.unpack(sig))
           psig = proc:pull_signal()
         end
+        
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
         --k.log(k.loglevels.info, ok, err)
+        
         if proc.dead or ok == "__internal_process_exit" or not ok then
           local exit = err or 0
+        
           if type(err) == "string" then
             exit = 127
           else
             exit = err or 0
             err = "exited"
           end
+          
           err = err or "died"
           k.log(k.loglevels.warn, "process died: ", proc.pid, exit, err)
           computer.pushSignal("process_died", proc.pid, exit, err)
+          
           for k, v in pairs(proc.handles) do
             pcall(v.close, v)
           end
+          
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
@@ -2534,6 +2833,7 @@ do
         end
       end
     end
+
     if not k.is_shutting_down then
       -- !! PANIC !!
       k.panic("init died")
@@ -2550,6 +2850,7 @@ do
     function p.spawn(args)
       checkArg(1, args.name, "string")
       checkArg(2, args.func, "function")
+    
       local sanitized = {
         func = args.func,
         name = args.name,
@@ -2558,29 +2859,37 @@ do
         input = args.input,
         output = args.output
       }
+      
       local new = api.spawn(sanitized)
+      
       return new.pid
     end
     
     function p.kill(pid)
       checkArg(1, pid, "number", "nil")
+      
       local cur = current
       local atmp = processes[pid]
+      
       if not atmp then
         return true
       end
+      
       if (atmp or {owner=current.owner}).owner ~= cur.owner and
          cur.owner ~= 0 then
         return nil, "permission denied"
       end
+      
       return api.kill(pid)
     end
     
     function p.list()
       local pr = {}
+      
       for k, v in pairs(processes) do
         pr[#pr+1]=k
       end
+      
       table.sort(pr)
       return pr
     end
@@ -2590,13 +2899,17 @@ do
     -- returns: exit status, exit message
     function p.await(pid)
       checkArg(1, pid, "number")
+      
       local signal = {}
+      
       if not processes[pid] then
         return nil, "no such process"
       end
+      
       repeat
         signal = table.pack(coroutine.yield())
       until signal[1] == "process_died" and signal[2] == pid
+      
       return signal[3], signal[4]
     end
     
@@ -2733,6 +3046,7 @@ k.log(k.loglevels.info, "base/load_init")
 -- we need to mount the root filesystem first
 do
   local root, reftype = nil, "UUID"
+  
   if k.cmdline.root then
     local rtype, ref = k.cmdline.root:match("^(.-)=(.+)$")
     reftype = rtype:upper() or "UUID"
@@ -2743,25 +3057,33 @@ do
       -- GOODBYE CRUEL WORLD
       error("cannot determine root filesystem")
     end
-    -- still error, slightly less hard
+  
+    -- still error, but slightly less hard
     k.panic("Cannot determine root filesystem!")
   else
-    k.log(k.loglevels.warn, "\27[101;97mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
-    k.log(k.loglevels.warn, "\27[101;97mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
+    k.log(k.loglevels.warn,
+      "\27[101;97mWARNING\27[39;49m use of computer.getBootAddress to detect the root filesystem is discouraged.")
+    k.log(k.loglevels.warn,
+      "\27[101;97mWARNING\27[39;49m specify root=UUID=<address> on the kernel command line to suppress this message.")
     root = computer.getBootAddress()
     reftype = "UUID"
   end
+
   local ok, err
+  
   if reftype ~= "LABEL" then
     if reftype ~= "UUID" then
       k.log(k.loglevels.warn, "invalid rootspec type (expected LABEL or UUID, got ", reftype, ") - assuming UUID")
     end
+  
     if not component.list("filesystem")[root] then
       for k, v in component.list("drive", true) do
         local ptable = k.fs.get_partition_table_driver(k)
+    
         if ptable then
           for i=1, #ptable:list(), 1 do
             local part = ptable:partition(i)
+        
             if part and (part.address == root) then
               root = part
               break
@@ -2770,9 +3092,11 @@ do
         end
       end
     end
+
     ok, err = k.fs.api.mount(root, k.fs.api.types.RAW, "/")
   elseif reftype == "LABEL" then
     local comp
+    
     for k, v in component.list() do
       if v == "filesystem" then
         if component.invoke(k, "getLabel") == root then
@@ -2781,9 +3105,11 @@ do
         end
       elseif v == "drive" then
         local ptable = k.fs.get_partition_table_driver(k)
+    
         if ptable then
           for i=1, #ptable:list(), 1 do
             local part = ptable:partition(i)
+        
             if part then
               if part.getLabel() == root then
                 comp = part
@@ -2794,32 +3120,43 @@ do
         end
       end
     end
+
     if not comp then
       k.panic("Could not determine root filesystem from root=", k.cmdline.root)
     end
+    
     ok, err = k.fs.api.mount(comp, k.fs.api.types.RAW, "/")
   end
+
   if not ok then
     k.panic(err)
   end
+  
   k.log(k.loglevels.info, "Mounted root filesystem")
 end
 
 do
   k.log(k.loglevels.info, "Creating userspace sandbox")
+  
   local sbox = k.util.copy_table(_G)
+  
   k.userspace = sbox
   sbox._G = sbox
+  
   k.hooks.call("sandbox", sbox)
 
   k.log(k.loglevels.info, "Loading init from",
                                k.cmdline.init or "/sbin/init.lua")
+  
   local ok, err = loadfile(k.cmdline.init or "/sbin/init.lua")
+  
   if not ok then
     k.panic(err)
   end
+  
   local ios = k.create_fstream(k.logio, "rw")
   ios.buffer_mode = "none"
+  
   k.scheduler.spawn {
     name = "init",
     func = ok,
