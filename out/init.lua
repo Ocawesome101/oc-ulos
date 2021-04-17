@@ -247,12 +247,22 @@ do
     end
   end
 
+  -- All open TTYs
+  local ttys = {}
+  local ctty = 1 -- current TTY
+
   local _stream = {}
+  
   -- This is where most of the heavy lifting happens.  I've attempted to make
-  --   this function fairly optimized, but there's only so much one can do given
-  --   OpenComputers's call budget limits and wrapped string library.
+  -- this function fairly optimized, but there's only so much one can do given
+  -- OpenComputers's call budget limits and wrapped string library.
   function _stream:write(str)
     local gpu = self.gpu
+    -- if the terminal should be drawn to a buffer, then do so
+    if self.bidx then
+      gpu.setActiveBuffer(self.bidx)
+    end
+
     -- TODO: cursor logic is a bit brute-force currently, there are certain
     -- TODO: scenarios where cursor manipulation is unnecessary
     local c, f, b = gpu.get(self.cx, self.cy)
@@ -261,8 +271,10 @@ do
     gpu.set(self.cx, self.cy, c)
     gpu.setForeground(self.fg)
     gpu.setBackground(self.bg)
+    
     -- lazily convert tabs
     str = str:gsub("\t", "  ")
+    
     while #str > 0 do
       if self.in_esc then
         local esc_end = str:find("[a-zA-Z]")
@@ -274,7 +286,8 @@ do
           str, finish = pop(str, esc_end)
           local esc = string.format("%s%s", self.esc, finish)
           self.esc = ""
-          local separator, raw_args, code = esc:match("\27([%[%(])([%d;]*)([a-zA-Z])")
+          local separator, raw_args, code = esc:match(
+            "\27([%[%(])([%d;]*)([a-zA-Z])")
           raw_args = raw_args or "0"
           local args = {}
           for arg in raw_args:gmatch("([^;]+)") do
@@ -325,11 +338,35 @@ do
   }
 
   function _stream:key_down(...)
+    -- Don't register key presses while in the background
+    if self.bidx then return end
     local signal = table.pack(...)
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    local ch = signal[3]
+    local ch, sc = signal[3], signal[4]
     local tw = char
+    -- Handle alt-N early
+    -- TODO: support the other Alt key, which my ancient Mac doesn't have
+    if sc == 56 then -- alt has been pressed
+      self.alt_pressed = true
+      return
+    elseif self.alt_pressed and sc >= 2 and sc <= 5 then
+      -- up to 4 VTs, 1 to 4
+      -- if no buffers then abort early
+      if not gpu.bitblt then return end
+      local vtn = sc - 1 -- scancode - 1 = number.  HAX!
+      if not ttys[vtn] then return end -- no TTY registered there
+      local to_fg = ttys[vtn]
+      local to_bg = ttys[ctty]
+      to_bg.bidx = gpu.allocateBuffer()
+      gpu.setActiveBuffer(0)
+      gpu.bitblt(to_bg.bidx)
+      gpu.setActiveBuffer(to_fg.bidx)
+      gpu.bitblt(0)
+      gpu.setActiveBuffer(0)
+      gpu.freeBuffer(to_fg.bidx)
+      to_fg.bidx = nil
+    end
     if #char == 1 and ch == 0 then
       char = ""
       tw = ""
@@ -362,6 +399,12 @@ do
     end
     self.rb = string.format("%s%s", self.rb, char)
   end
+
+  function _stream:key_up(_, _, c)
+    if c == 56 then
+      self.alt_down = false
+    end
+  end
   
   function _stream:read(n)
     checkArg(1, n, "number")
@@ -390,6 +433,7 @@ do
     self.flush = closed
     self.close = closed
     k.event.unregister(self.key_handler_id)
+    k.event.unregister(self.kup_handler_id)
     return true
   end
 
@@ -424,6 +468,9 @@ do
     end
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
+    end)
+    new.hup_handler_id = k.event.register("key_up", function(...)
+      return new:key_up(...)
     end)
     return new
   end
