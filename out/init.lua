@@ -1211,6 +1211,8 @@ do
     return segments
   end
 
+  fs.split = split
+
   -- "clean" a path
   local function clean(path)
     return table.concat(
@@ -1508,11 +1510,14 @@ do
     checkArg(1, node, "string", "table")
     checkArg(2, fstype, "number")
     checkArg(2, path, "string")
+    
     local device, err = node
+    
     if fstype ~= fs.api.types.RAW then
       -- TODO: properly check object methods first
       goto skip
     end
+    
     if k.sysfs then
       local sdev, serr = k.sysfs.resolve_device(node)
       if not sdev then return nil, serr end
@@ -1520,34 +1525,43 @@ do
     else
       device, err = fs.get_filesystem_driver(node)
     end
+    
     ::skip::
     if not device then
       return nil, err
     end
+    
     path = clean(path)
     if path == "" then path = "/" end
+    
     local root, fname = path:match("^(/?.+)/([^/]+)/?$")
     root = root or "/"
     fname = fname or path
+    
     local pnode, err, rpath
+    
     if path == "/" then
       mounts["/"] = {node = device, children = {}}
       return true
     else
       pnode, err, rpath = resolve(root)
     end
+    
     if not pnode then
       return nil, err
     end
+    
     local full = clean(string.format("%s/%s", rpath, fname))
     if full == "" then full = "/" end
+    
     if type(node) == "string" then
       pnode.children[full] = node
     else
       pnode.children[full] = {node=device, children={}}
-      -- this line is very crunched to fit in 80 characters :P
-      mounted[path]=(device.node.getLabel and device.node.getLabel())or"unknown"
+      mounted[path]=(device.node and device.node.getLabel and
+        device.node.getLabel()) or "unknown"
     end
+    
     return true
   end
 
@@ -2601,14 +2615,113 @@ do
     dev = {dir = true},
     mounts = {
       dir = false,
-      read = function(_, n)
+      read = function(h)
+        if h.__has_been_read then
+          return nil
+        end
         local mounts = k.fs.api.mounts()
+        local ret = ""
+        for k, v in pairs(mounts) do
+          ret = string.format("%s%s\n", ret, k..": "..v)
+        end
+        h.__has_been_read = true
+        return ret
       end,
       write = function()
         return nil, "bad file descriptor"
       end
     }
   }
+
+  local function find(f)
+    if f == "/" then
+      return tree
+    end
+    local s = k.fs.split(f)
+    local c = tree
+    for i=1, #s, 1 do
+      if s[i] == "dir" then
+        return nil, k.fs.errors.file_not_found
+      end
+      if not c[s[i]] then
+        return nil, k.fs.errors.file_not_found
+      end
+      c = c[s[i]]
+    end
+    return c
+  end
+
+  local obj = {}
+
+  function obj:stat(f)
+    checkArg(1, f, "string")
+    local n, e = find(f)
+    local e = tree[f]
+    if n then
+      return {
+        permissions = 365,
+        owner = 0,
+        group = 0,
+        lastModified = 0,
+        size = 0,
+        isDirectory = not not n.dir
+      }
+    else
+      return nil, e
+    end
+  end
+
+  function obj:touch()
+    return nil, k.fs.errors.read_only
+  end
+
+  function obj:remove()
+    return nil, k.fs.errors.read_only
+  end
+
+  function obj:list(d)
+    local n, e = find(d)
+    if not n then return nil, e end
+    if not n.dir then return nil, k.fs.errors.not_a_directory end
+    local f = {}
+    for k, v in pairs(e) do
+      if k ~= "dir" then
+        f[#f+1] = k
+      end
+    end
+    return f
+  end
+
+  local function ferr()
+    return nil, "bad file descriptor"
+  end
+
+  local function fclose(self)
+    if self.closed then
+      return ferr()
+    end
+    self.closed = true
+  end
+
+  function obj:open(f, m)
+    checkArg(1, f, "string")
+    checkArg(2, m, "string")
+    local n, e = find(f)
+    if not n then return nil, e end
+    if n.dir then return nil, k.fs.errors.is_a_directory end
+    return {
+      read = n.read or ferr,
+      write = n.write or ferr,
+      seek = n.seek or ferr,
+      close = n.close or fclose
+    }
+  end
+
+  -- we have to hook this here since the root filesystem isn't mounted yet
+  -- when the kernel reaches this point
+  k.hooks.add("sandbox", function()
+    assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "/sys"))
+  end)
 end
 
 
