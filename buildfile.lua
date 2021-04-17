@@ -4,8 +4,8 @@ local OS = "ULOS"
 local REL = os.date("%y.%m").."-r0"
 
 local seq = {
-  "cynosure",
-  "refinement"
+  {name = "cynosure", flags = "KMODS='extra/sysfs'"},
+  {name = "refinement", flags = ""}
 }
 
 local extern = {
@@ -15,8 +15,9 @@ local extern = {
 }
 
 local build = function(dir)
-  log("err", "building sub-project ", dir)
-  io.write(assert(ex("cd", dir, "; OS='"..OS.." "..REL.."' ../build")))
+  log("err", "building sub-project ", dir.name)
+  io.write(assert(ex("cd", dir.name, "; OS='"..OS.." "..REL.."'",
+    dir.flags, "../build")))
 end
 
 _G.main = function(args)

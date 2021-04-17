@@ -74,14 +74,17 @@ do
     while self.cx > self.w do
       self.cx, self.cy = self.cx - self.w, self.cy + 1
     end
+    
     while self.cx < 1 do
       self.cx, self.cy = self.w + self.cx, self.cy - 1
     end
+    
     while self.cy < 1 do
       self.cy = self.cy + 1
       self.gpu.copy(1, 1, self.w, self.h, 0, 1)
       self.gpu.fill(1, 1, self.w, 1, " ")
     end
+    
     while self.cy > self.h do
       self.cy = self.cy - 1
       self.gpu.copy(1, 1, self.w, self.h, 0, -1)
@@ -93,8 +96,11 @@ do
     while #rline > 0 do
       local to_write
       rline, to_write = pop(rline, self.w - self.cx + 1)
+      
       self.gpu.set(self.cx, self.cy, to_write)
+      
       self.cx = self.cx + #to_write
+      
       wrap_cursor(self)
     end
   end
@@ -102,16 +108,20 @@ do
   local function write(self, lines)
     while #lines > 0 do
       local next_nl = lines:find("\n")
+
       if next_nl then
         local ln
         lines, ln = pop(lines, next_nl - 1)
         lines = lines:sub(2) -- take off the newline
+        
         writeline(self, ln)
+        
         self.cx, self.cy = 1, self.cy + 1
+        
         wrap_cursor(self)
       else
         writeline(self, lines)
-        lines = ""
+        break
       end
     end
   end
@@ -119,7 +129,7 @@ do
   local commands, control = {}, {}
   local separators = {
     standard = "[",
-    control = "("
+    control = "?"
   }
 
   -- move cursor up N[=1] lines
@@ -154,14 +164,17 @@ do
     local y, x = 1, 1
     y = args[1] or y
     x = args[2] or x
+  
     self.cx = x
     self.cy = y
+    
     wrap_cursor(self)
   end
 
   -- clear a portion of the screen
   function commands:J(args)
     local n = args[1] or 0
+    
     if n == 0 then
       self.gpu.fill(1, self.cy, self.w, self.h, " ")
     elseif n == 1 then
@@ -174,6 +187,7 @@ do
   -- clear a portion of the current line
   function commands:K(args)
     local n = args[1] or 0
+    
     if n == 0 then
       self.gpu.fill(self.cx, self.cy, self.w, 1, " ")
     elseif n == 1 then
@@ -183,7 +197,8 @@ do
     end
   end
 
-  -- adjust terminal attributes
+  -- adjust some terminal attributes - foreground/background color and local
+  -- echo.  for more control {ESC}?c may be desirable.
   function commands:m(args)
     args[1] = args[1] or 0
     for i=1, #args, 1 do
@@ -220,36 +235,52 @@ do
 
   function commands:n(args)
     local n = args[1] or 0
+
     if n == 6 then
       self.rb = string.format("%s\27[%d;%dR", self.cy, self.cx)
     end
   end
 
   -- adjust more terminal attributes
+  -- codes:
+  --   - 0: reset
+  --   - 1: enable echo
+  --   - 2: enable line mode
+  --   - 3: enable raw mode
+  --   - 11: disable echo
+  --   - 12: disable line mode
+  --   - 13: disable raw mode
   function control:c(args)
     args[1] = args[1] or 0
+    
     for i=1, #args, 1 do
       local n = args[i]
+
       if n == 0 then -- (re)set configuration to sane defaults
-        -- echo text that the user has entered
+        -- echo text that the user has entered?
         self.attributes.echo = true
-        -- buffer input by line
+        
+        -- buffer input by line?
         self.attributes.line = true
-        -- send raw key input data according to the VT100 spec
+        
+        -- whether to send raw key input data according to the VT100 spec,
+        -- rather than e.g. changing \r -> \n and capturing backspace
         self.attributes.raw = false
-      -- these numbers aren't random - they're the ASCII codes of the most
-      -- reasonable corresponding characters
-      elseif n == 82 then
+      elseif n == 1 then
+        self.attributes.echo = true
+      elseif n == 2 then
+        self.attributes.line = true
+      elseif n == 3 then
         self.attributes.raw = true
-      elseif n == 114 then
+      elseif n == 11 then
+        self.attributes.echo = false
+      elseif n == 12 then
+        self.attributes.line = false
+      elseif n == 13 then
         self.attributes.raw = false
       end
     end
   end
-
-  -- All open TTYs
-  local ttys = {}
-  local ctty = 1 -- current TTY
 
   local _stream = {}
   
@@ -257,11 +288,9 @@ do
   -- this function fairly optimized, but there's only so much one can do given
   -- OpenComputers's call budget limits and wrapped string library.
   function _stream:write(str)
+    checkArg(1, str, "string")
+
     local gpu = self.gpu
-    -- if the terminal should be drawn to a buffer, then do so
-    if self.bidx then
-      gpu.setActiveBuffer(self.bidx)
-    end
 
     -- TODO: cursor logic is a bit brute-force currently, there are certain
     -- TODO: scenarios where cursor manipulation is unnecessary
@@ -278,35 +307,45 @@ do
     while #str > 0 do
       if self.in_esc then
         local esc_end = str:find("[a-zA-Z]")
+
         if not esc_end then
           self.esc = string.format("%s%s", self.esc, str)
         else
           self.in_esc = false
+
           local finish
           str, finish = pop(str, esc_end)
+
           local esc = string.format("%s%s", self.esc, finish)
           self.esc = ""
+
           local separator, raw_args, code = esc:match(
             "\27([%[%(])([%d;]*)([a-zA-Z])")
           raw_args = raw_args or "0"
+          
           local args = {}
           for arg in raw_args:gmatch("([^;]+)") do
             args[#args + 1] = tonumber(arg) or 0
           end
+          
           if separator == separators.standard and commands[code] then
             commands[code](self, args)
           elseif separator == separators.control and control[code] then
             control[code](self, args)
           end
+          
           wrap_cursor(self)
         end
       else
         local next_esc = str:find("\27")
+        
         if next_esc then
           self.in_esc = true
           self.esc = ""
+        
           local ln
           str, ln = pop(str, next_esc - 1)
+          
           write(self, ln)
         else
           write(self, str)
@@ -316,11 +355,13 @@ do
     end
 
     c, f, b = gpu.get(self.cx, self.cy)
+    
     gpu.setForeground(b)
     gpu.setBackground(f)
     gpu.set(self.cx, self.cy, c)
     gpu.setForeground(self.fg)
     gpu.setBackground(self.bg)
+    
     return true
   end
 
@@ -338,35 +379,13 @@ do
   }
 
   function _stream:key_down(...)
-    -- Don't register key presses while in the background
-    if self.bidx then return end
     local signal = table.pack(...)
+    
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
-    local ch, sc = signal[3], signal[4]
+    local ch = signal[3]
     local tw = char
-    -- Handle alt-N early
-    -- TODO: support the other Alt key, which my ancient Mac doesn't have
-    if sc == 56 then -- alt has been pressed
-      self.alt_pressed = true
-      return
-    elseif self.alt_pressed and sc >= 2 and sc <= 5 then
-      -- up to 4 VTs, 1 to 4
-      -- if no buffers then abort early
-      if not gpu.bitblt then return end
-      local vtn = sc - 1 -- scancode - 1 = number.  HAX!
-      if not ttys[vtn] then return end -- no TTY registered there
-      local to_fg = ttys[vtn]
-      local to_bg = ttys[ctty]
-      to_bg.bidx = gpu.allocateBuffer()
-      gpu.setActiveBuffer(0)
-      gpu.bitblt(to_bg.bidx)
-      gpu.setActiveBuffer(to_fg.bidx)
-      gpu.bitblt(0)
-      gpu.setActiveBuffer(0)
-      gpu.freeBuffer(to_fg.bidx)
-      to_fg.bidx = nil
-    end
+    
     if #char == 1 and ch == 0 then
       char = ""
       tw = ""
@@ -382,8 +401,10 @@ do
           (ch == 30 and "~") or
           (ch == 31 and "?") or ch
         ):upper()
+    
       tw = "^" .. tch
     end
+    
     if not self.attributes.raw then
       if ch == 13 then
         char = "\n"
@@ -394,20 +415,17 @@ do
         self.rb = self.rb:sub(1, -1)
       end
     end
+    
     if self.attributes.echo then
       self:write(tw or "")
     end
+    
     self.rb = string.format("%s%s", self.rb, char)
-  end
-
-  function _stream:key_up(_, _, c)
-    if c == 56 then
-      self.alt_down = false
-    end
   end
   
   function _stream:read(n)
     checkArg(1, n, "number")
+
     if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
         coroutine.yield()
@@ -417,6 +435,7 @@ do
         coroutine.yield()
       end
     end
+
     local data = self.rb:sub(1, n)
     self.rb = self.rb:sub(n + 1)
     return data
@@ -433,7 +452,6 @@ do
     self.flush = closed
     self.close = closed
     k.event.unregister(self.key_handler_id)
-    k.event.unregister(self.kup_handler_id)
     return true
   end
 
@@ -442,36 +460,44 @@ do
   function k.create_tty(gpu, screen)
     checkArg(1, gpu, "string")
     checkArg(2, screen, "string")
+
     local proxy = component.proxy(gpu)
+    
     proxy.bind(screen)
     proxy.setForeground(colors[8])
     proxy.setBackground(colors[1])
+    
     -- userspace will never directly see this, so it doesn't really matter what
     -- we put in this table
     local new = setmetatable({
       attributes = {echo=true,line=true,raw=false}, -- terminal attributes
       keyboards = {}, -- all attached keyboards on terminal initialization
-      in_esc = false,
-      gpu = proxy,
-      esc = "",
-      cx = 1,
-      cy = 1,
-      fg = colors[8],
-      bg = colors[1],
-      rb = ""
+      in_esc = false, -- was a partial escape sequence written
+      gpu = proxy, -- the associated GPU
+      esc = "", -- the escape sequence buffer
+      cx = 1, -- the cursor's X position
+      cy = 1, -- the cursor's Y position
+      fg = colors[8], -- the current foreground color
+      bg = colors[1], -- the current background color
+      rb = "" -- a buffer of characters read from the input
     }, {__index = _stream})
+
+    -- avoid gpu.getResolution calls
     new.w, new.h = proxy.maxResolution()
+
     proxy.setResolution(new.w, new.h)
     proxy.fill(1, 1, new.w, new.h, " ")
+    
+    -- register all keyboards attached to the screen
     for _, keyboard in pairs(component.invoke(screen, "getKeyboards")) do
       new.keyboards[keyboard] = true
     end
+    
+    -- register a keypress handler
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
     end)
-    new.hup_handler_id = k.event.register("key_up", function(...)
-      return new:key_up(...)
-    end)
+    
     return new
   end
 end
@@ -2564,6 +2590,26 @@ do
   end)
 end
 
+
+
+-- sysfs API --
+
+do
+  local tree = {
+    components = {dir = true},
+    proc = {dir = true},
+    dev = {dir = true},
+    mounts = {
+      dir = false,
+      read = function(_, n)
+        local mounts = k.fs.api.mounts()
+      end,
+      write = function()
+        return nil, "bad file descriptor"
+      end
+    }
+  }
+end
 
 
 
