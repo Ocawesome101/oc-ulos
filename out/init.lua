@@ -38,7 +38,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.17"
+  k._VERSION = "2021.04.18"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -430,13 +430,19 @@ do
     checkArg(1, n, "number")
 
     if self.attributes.line then
-      while (not self.rb:find("\n")) or (self.rb:find("\n") < n) do
+      while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
+          and not self.rb:find("\4") do
         coroutine.yield()
       end
     else
-      while #rb < n do
+      while #self.rb < n and (self.attributes.raw or not self.rb:find("\4")) do
         coroutine.yield()
       end
+    end
+
+    if self.rb:find("\4") then
+      self.rb = ""
+      return nil
     end
 
     local data = self.rb:sub(1, n)
@@ -455,11 +461,14 @@ do
     self.flush = closed
     self.close = closed
     k.event.unregister(self.key_handler_id)
+    if self.ttyn then k.sysfs.unregister("/dev/tty"..self.ttyn) end
     return true
   end
 
+  local ttyn = 0
+
   -- this is the raw function for creating TTYs over components
-  -- userspace gets abstracted-away stuff
+  -- userspace gets somewhat-abstracted-away stuff
   function k.create_tty(gpu, screen)
     checkArg(1, gpu, "string")
     checkArg(2, screen, "string")
@@ -500,6 +509,13 @@ do
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
     end)
+
+    -- register the TTY with the sysfs
+    if k.sysfs then
+      k.sysfs.register(k.sysfs.types.tty, new, "/dev/tty"..ttyn)
+      new.ttyn = ttyn
+      ttyn = ttyn + 1
+    end
     
     return new
   end
@@ -1637,12 +1653,11 @@ do
       goto skip
     end
     
-    if k.sysfs then
-      local sdev, serr = k.sysfs.resolve_device(node)
+    device, err = fs.get_filesystem_driver(node)
+    if k.sysfs and not device then
+      local sdev, serr = k.sysfs.retrieve(node)
       if not sdev then return nil, serr end
       device, err = fs.get_filesystem_driver(sdev)
-    else
-      device, err = fs.get_filesystem_driver(node)
     end
     
     ::skip::
@@ -1955,6 +1970,7 @@ k.log(k.loglevels.info, "base/stdlib/io")
 
 do
   local fs = k.fs.api
+  local im = {stdin = 0, stdout = 1, stderr = 2}
  
   local mt = {
     __index = function(t, k)
@@ -1969,6 +1985,7 @@ do
     __newindex = function(t, k, v)
       local info = k.scheduler.info()
       info.data.io[k] = v
+      info.handles[im[k]] = v
     end
   }
 
@@ -1984,12 +2001,26 @@ do
     if not handle then
       return nil, err
     end
+
+    local fstream = k.create_fstream(handle, mode)
+
+    local info = k.scheduler.info()
+    if info then
+      info.data.handles[#info.data.handles + 1] = fstream
+      fstream.n = #info.data.handles
+      
+      local close = fstream.close
+      function fstream:close()
+        close(self)
+        info.data.handles[self.n] = nil
+      end
+    end
     
-    return k.create_fstream(handle, mode)
+    return fstream
   end
 
-  -- popen should be defined in userspace so the shell can handle it
-  -- tmpfile should be defined in userspace also
+  -- popen should be defined in userspace so the shell can handle it.
+  -- tmpfile should be defined in userspace also.
   -- it turns out that defining things PUC Lua can pass off to the shell
   -- *when you don't have a shell* is rather difficult and so, instead of
   -- weird hacks like in Paragon or Monolith, I just leave it up to userspace.
@@ -2298,6 +2329,10 @@ do
   
     if cannot_alias[t2] then
       error("attempt to override default type")
+    end
+
+    if defs[t2] then
+      error("cannot override existing typedef")
     end
     
     defs[t2] = t1
@@ -2658,6 +2693,10 @@ do
     for k, v in pairs(args) do
       new[k] = v
     end
+
+    new.handles[0] = new.stdin
+    new.handles[1] = new.stdout
+    new.handles[2] = new.stderr
     
     new.coroutine.status = function(self)
       if self.dead then
@@ -2705,7 +2744,9 @@ do
     new:add_thread(args.func)
     processes[new.pid] = new
     
-    if k.sysfs then k.sysfs.add_to("proc", new) end
+    if k.sysfs then
+      assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..new.pid))
+    end
     
     return new
   end
@@ -2762,7 +2803,7 @@ do
 
   local pullSignal = computer.pullSignal
   function api.loop()
-    while processes[1] do
+    while next(processes) do
       local to_run = {}
       local going_to_run = {}
       local min_timeout = math.huge
@@ -2785,7 +2826,7 @@ do
       local sig = table.pack(pullSignal(min_timeout))
       for k, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
-            not (v.stopped or going_to_run[v.pid]) then
+            not (v.stopped or going_to_run[v.pid] or v.dead) then
           to_run[#to_run + 1] = v
       
           if v.resume_next then
@@ -2806,7 +2847,6 @@ do
         
         local start_time = computer.uptime()
         local ok, err = proc:resume(table.unpack(psig))
-        --k.log(k.loglevels.info, ok, err)
         
         if proc.dead or ok == "__internal_process_exit" or not ok then
           local exit = err or 0
@@ -2836,7 +2876,7 @@ do
 
     if not k.is_shutting_down then
       -- !! PANIC !!
-      k.panic("init died")
+      k.panic("all user processes died")
     end
   end
 
@@ -2918,7 +2958,6 @@ do
 end
 
 
-
 -- sysfs API --
 
 do
@@ -2932,12 +2971,16 @@ do
         if h.__has_been_read then
           return nil
         end
+
         local mounts = k.fs.api.mounts()
         local ret = ""
+        
         for k, v in pairs(mounts) do
           ret = string.format("%s%s\n", ret, k..": "..v)
         end
+        
         h.__has_been_read = true
+        
         return ret
       end,
       write = function()
@@ -2950,17 +2993,22 @@ do
     if f == "/" then
       return tree
     end
+
     local s = k.fs.split(f)
     local c = tree
+    
     for i=1, #s, 1 do
       if s[i] == "dir" then
         return nil, k.fs.errors.file_not_found
       end
+    
       if not c[s[i]] then
         return nil, k.fs.errors.file_not_found
       end
+      
       c = c[s[i]]
     end
+
     return c
   end
 
@@ -2968,8 +3016,10 @@ do
 
   function obj:stat(f)
     checkArg(1, f, "string")
+    
     local n, e = find(f)
     local e = tree[f]
+    
     if n then
       return {
         permissions = 365,
@@ -2994,14 +3044,18 @@ do
 
   function obj:list(d)
     local n, e = find(d)
+    
     if not n then return nil, e end
     if not n.dir then return nil, k.fs.errors.not_a_directory end
+    
     local f = {}
+    
     for k, v in pairs(e) do
       if k ~= "dir" then
         f[#f+1] = k
       end
     end
+    
     return f
   end
 
@@ -3013,15 +3067,21 @@ do
     if self.closed then
       return ferr()
     end
+    
     self.closed = true
   end
 
   function obj:open(f, m)
     checkArg(1, f, "string")
     checkArg(2, m, "string")
+    
     local n, e = find(f)
+    
     if not n then return nil, e end
     if n.dir then return nil, k.fs.errors.is_a_directory end
+
+    if n.open then return n.open(m) end
+    
     return {
       read = n.read or ferr,
       write = n.write or ferr,
@@ -3030,12 +3090,239 @@ do
     }
   end
 
+  -- now here's the API
+  local api = {}
+  api.types = {
+    generic = "generic",
+    process = "process",
+    directory = "directory"
+  }
+  typedef("string", "SYSFS_NODE")
+
+  local handlers = {}
+
+  function api.register(otype, node, path)
+    checkArg(1, otype, "SYSFS_NODE")
+    assert(type(node) ~= "nil", "bad argument #2 (value expected, got nil)")
+    checkArg(3, path, "string")
+
+    if not handlers[otype] then
+      return nil, string.format("sysfs: node type '%s' not handled", otype)
+    end
+
+    local segments = k.fs.split(path)
+    local nname = segments[#segments]
+    local n, e = find(table.concat(segments, "/", 1, #segments - 1))
+
+    if not n then
+      return nil, e
+    end
+
+    local nn, ee = handlers[otype](node)
+    if not nn then
+      return nil, ee
+    end
+
+    n[nname] = nn
+
+    return true
+  end
+
+  function api.retrieve(path)
+    checkArg(1, path, "string")
+    return find(path)
+  end
+
+  function api.unregister(path)
+    checkArg(1, path, "string")
+    
+    local segments = fs.split(path)
+    local ppath = table.concat(segments, "/", 1, #segments - 1)
+    
+    local node = segments[#segments]
+    if node == "dir" then
+      return nil, fs.errors.file_not_found
+    end
+
+    local n, e = find(ppath)
+    if not n then
+      return nil, e
+    end
+
+    if not n[node] then
+      return nil, fs.errors.file_not_found
+    end
+
+    n[node] = nil
+
+    return true
+  end
+  
+  function api.handle(otype, mkobj)
+    checkArg(1, otype, "SYSFS_NODE")
+    checkArg(2, mkobj, "function")
+
+    api.types[otype] = otype
+    handlers[otype] = mkobj
+
+    return true
+  end
+  
+  k.sysfs = api
+
   -- we have to hook this here since the root filesystem isn't mounted yet
-  -- when the kernel reaches this point
+  -- when the kernel reaches this point.
   k.hooks.add("sandbox", function()
     assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "/sys"))
+    -- Adding the sysfs API to userspace is probably not necessary for most
+    -- things.  If it does end up being necessary I'll do it.
+    --k.userspace.package.loaded.sysfs = k.util.copy_table(api)
   end)
 end
+
+
+-- sysfs handlers
+
+do
+
+  local util = {}
+  function util.mkfile(data)
+    local data = data
+    return {
+      dir = false,
+      read = function(self, n)
+        self.__ptr = self.__ptr or 0
+        if self.__ptr >= #data then
+          return nil
+        else
+          self.__ptr = self.__ptr + n
+          return data:sub(self.__ptr - n, self.__ptr)
+        end
+      end
+    }
+  end
+
+  function util.fmkfile(tab, k, w)
+    return {
+      dir = false,
+      read = function(self)
+        if self.__read then
+          return nil
+        end
+
+        self.__read = true
+        return tostring(tab[k])
+      end,
+      write = w and function(self, d)
+        tab[k] = tonumber(d) or d
+      end or nil
+    }
+  end
+
+
+-- sysfs: Generic component handler
+
+do
+  local function mknew(addr)
+    return {
+      dir = true,
+      addr = util.mkfile(addr),
+      type = util.mkfile(component.type(addr)),
+      slot = util.mkfile(tostring(component.slot(addr)))
+    }
+  end
+
+  k.sysfs.handle("generic", mknew)
+end
+
+
+-- sysfs: Directory generator
+
+do
+  local function mknew()
+    return { dir = true }
+  end
+
+  k.sysfs.handle("directory", mknew)
+end
+
+
+-- sysfs: Process handler
+
+do
+  local function mknew(proc)
+    checkArg(1, proc, "process")
+    
+    local base = {
+      dir = true,
+      handles = {
+        dir = true,
+      },
+      cputime = util.fmkfile(proc, "cputime"),
+      name = util.mkfile(proc.name),
+      threads = util.fmkfile(proc, "threads"),
+      owner = util.mkfile(proc.owner),
+      deadline = util.fmkfile(proc, "deadline"),
+      stopped = util.fmkfile(proc, "stopped"),
+      waiting = util.fmkfile(proc, "waiting")
+    }
+
+    local mt = {
+      __index = function(t, k)
+        k = tonumber(k) or k
+        if not proc.handles[k] then
+          return nil, k.fs.errors.file_not_found
+        else
+          return {dir = false, open = function(m)
+            -- you are not allowed to access other
+            -- people's files!
+            return nil, "permission denied"
+          end}
+        end
+      end,
+      __pairs = function(t)
+        local iter = pairs(t)
+        return function()
+          return (iter())
+        end
+      end
+    }
+    mt.__ipairs = mt.__pairs
+
+    setmetatable(base, mt)
+
+    return base
+  end
+
+  k.sysfs.handle("process", mknew)
+end
+
+
+-- sysfs: TTY device handling
+
+do
+  local function mknew(tty)
+    return {
+      dir = false,
+      read = function(_, n)
+        return tty:read(n)
+      end,
+      write = function(_, d)
+        return tty:write(d)
+      end
+    }
+  end
+
+  k.sysfs.handle("tty", mknew)
+end
+
+
+-- component-specific handlers
+-- #include "sysfs/handlers/"
+
+end -- sysfs handlers: Done
+
+
 
 
 
@@ -3133,6 +3420,14 @@ do
   end
   
   k.log(k.loglevels.info, "Mounted root filesystem")
+end
+
+-- register components with the sysfs, if possible
+do
+  k.log(k.loglevels.info, "Registering components")
+  for k, v in component.list() do
+    computer.pushSignal("component_added", k, v)
+  end
 end
 
 do

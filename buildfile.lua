@@ -4,7 +4,7 @@ local OS = "ULOS"
 local REL = os.date("%y.%m").."-r0"
 
 local seq = {
-  {name = "cynosure", flags = "KMODS='extra/sysfs'"},
+  {name = "cynosure", flags = ""},
   {name = "refinement", flags = ""}
 }
 
