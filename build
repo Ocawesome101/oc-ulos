@@ -105,7 +105,7 @@ local statii = { -- 72
 local log -- 77
 log = function(...) -- 77
 	local status = ... -- 78
-	io.write("\27[", statii[status] or 96, "m* \27[39m", select(2, ...)) -- 79
+	io.write("\27[", statii[status] or 96, "m * \27[39m", select(2, ...)) -- 79
 	return io.write("\n") -- 80
 end -- 77
 local args = table.pack(...) -- 83

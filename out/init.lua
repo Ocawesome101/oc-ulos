@@ -3184,7 +3184,6 @@ end
 -- sysfs handlers
 
 do
-
   local util = {}
   function util.mkfile(data)
     local data = data
@@ -3216,6 +3215,19 @@ do
       write = w and function(self, d)
         tab[k] = tonumber(d) or d
       end or nil
+    }
+  end
+
+  function util.fnmkfile(r, w)
+    return {
+      dir = false,
+      read = function(s)
+        if s.__read then
+          return nil
+        end
+        return r()
+      end,
+      write = w
     }
   end
 
@@ -3317,7 +3329,7 @@ do
 end
 
 
--- component-specific handlers
+  -- component-specific handlers
 -- #include "sysfs/handlers/"
 
 end -- sysfs handlers: Done
