@@ -388,6 +388,10 @@ do
 
   function _stream:key_down(...)
     local signal = table.pack(...)
+
+    if signal[3] == 0 and signal[4] == 0 then
+      return
+    end
     
     local char = aliases[signal[4]] or
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
@@ -515,12 +519,14 @@ do
       return new:key_down(...)
     end)
 
+    
     -- register the TTY with the sysfs
     if k.sysfs then
       k.sysfs.register(k.sysfs.types.tty, new, "/dev/tty"..ttyn)
       new.ttyn = ttyn
-      ttyn = ttyn + 1
     end
+    
+    ttyn = ttyn + 1
     
     return new
   end
@@ -2792,7 +2798,8 @@ do
     processes[new.pid] = new
     
     if k.sysfs then
-      assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..new.pid))
+      assert(k.sysfs.register(k.sysfs.types.process, new, "/proc/"..math.floor(
+        new.pid)))
     end
     
     return new
@@ -2913,6 +2920,10 @@ do
             pcall(v.close, v)
           end
           
+          local ppt = "/proc/" .. math.floor(proc.pid)
+          if k.sysfs then
+            k.sysfs.unregister(ppt)
+          end
           processes[proc.pid] = nil
         else
           proc.cputime = proc.cputime + computer.uptime() - start_time
@@ -3125,7 +3136,7 @@ do
     
     for k, v in pairs(n) do
       if k ~= "dir" then
-        f[#f+1] = k
+        f[#f+1] = tostring(k)
       end
     end
     
@@ -3209,12 +3220,12 @@ do
   function api.unregister(path)
     checkArg(1, path, "string")
     
-    local segments = fs.split(path)
+    local segments = k.fs.split(path)
     local ppath = table.concat(segments, "/", 1, #segments - 1)
     
     local node = segments[#segments]
     if node == "dir" then
-      return nil, fs.errors.file_not_found
+      return nil, k.fs.errors.file_not_found
     end
 
     local n, e = find(ppath)
@@ -3373,16 +3384,13 @@ do
           end}
         end
       end,
-      __pairs = function(t)
-        local iter = pairs(t)
-        return function()
-          return (iter())
-        end
+      __pairs = function()
+        return pairs(proc.handles)
       end
     }
     mt.__ipairs = mt.__pairs
 
-    setmetatable(base, mt)
+    setmetatable(base.handles, mt)
 
     return base
   end
@@ -3409,6 +3417,9 @@ do
   end
 
   k.sysfs.handle("tty", mknew)
+
+  k.sysfs.register("tty", k.logio, "/dev/console")
+  k.sysfs.register("tty", k.logio, "/dev/tty0")
 end
 
 
@@ -3424,11 +3435,19 @@ k.log(k.loglevels.info, "sysfs/handlers/component")
 do
   local n = {}
   local gpus, screens = {}, {}
+  gpus[k.logio.gpu] = true
+  screens[k.logio.gpu.getScreen()] = true 
 
   local function update_ttys(a, c)
     if c == "gpu" then
+      if gpus[a] ~= nil then
+        return
+      end
       gpus[a] = false
     elseif c == "screen" then
+      if screens[a] ~= nil then
+        return
+      end
       screens[a] = false
     end
 
@@ -3438,7 +3457,7 @@ do
           if not sv then
             k.create_tty(gk, sk)
             gpus[gk] = true
-            screens[vk] = true
+            screens[sk] = true
             break
           end
         end
@@ -3446,8 +3465,10 @@ do
     end
   end
 
-  local function added(addr, ctype)
+  local function added(_, addr, ctype)
     n[ctype] = n[ctype] or 0
+
+    k.log(k.loglevels.info, "Detected component:", addr .. ", type", ctype)
     
     local path = "/sys/components/by-address/" .. addr
     local path2 = "/sys/components/by-type/" .. ctype .. "/" .. n[ctype]
@@ -3469,7 +3490,7 @@ do
     return s
   end
 
-  local function removed(addr, ctype)
+  local function removed(_, addr, ctype)
     local path = "/sys/components/by-address/" .. addr
     local path2 = "/sys/components/by-type/" .. addr
     k.sysfs.unregister(path2)
@@ -3588,6 +3609,7 @@ do
   k.log(k.loglevels.info, "Registering components")
   for k, v in component.list() do
     computer.pushSignal("component_added", k, v)
+    repeat local x = computer.pullSignal() until x == "component_added"
   end
 end
 

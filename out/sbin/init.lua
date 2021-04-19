@@ -207,3 +207,5 @@ do
   rf.log(rf.prefix.blue, "Started services")
 end
 
+
+while true do coroutine.yield() end

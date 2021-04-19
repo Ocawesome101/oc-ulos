@@ -11,19 +11,19 @@ end
 
 local fs = require("filesystem")
 
-local function pf(d)
-  local files, err = fs.list(d)
-  if not files then
-    print(d .. ": " .. err)
-    return
-  end
-  print(d)
-  for i=1, #files, 1 do
-    print(files[i])
+local d = "/sys/dev"
+local files, err = fs.list(d)
+if not files then
+  error(d .. ": " .. err)
+  return
+end
+
+table.sort(files)
+
+for _, f in ipairs(files) do
+  if f:match("tty") then
+    print("Starting login on " .. f)
+    local n = f:match("tty(%d+)")
   end
 end
 
-pf("/")
-pf("/sys")
-pf("/sys/dev")
-pf("/sys/proc")
