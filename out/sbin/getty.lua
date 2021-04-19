@@ -9,5 +9,21 @@ local function try(...)
   end
 end
 
+local fs = require("filesystem")
 
+local function pf(d)
+  local files, err = fs.list(d)
+  if not files then
+    print(d .. ": " .. err)
+    return
+  end
+  print(d)
+  for i=1, #files, 1 do
+    print(files[i])
+  end
+end
 
+pf("/")
+pf("/sys")
+pf("/sys/dev")
+pf("/sys/proc")

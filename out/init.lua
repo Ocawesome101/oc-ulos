@@ -286,13 +286,18 @@ do
   end
 
   local _stream = {}
+
+  local function temp(...)
+    return ...
+  end
   
   -- This is where most of the heavy lifting happens.  I've attempted to make
   -- this function fairly optimized, but there's only so much one can do given
   -- OpenComputers's call budget limits and wrapped string library.
-  function _stream:write(str)
-    checkArg(1, str, "string")
+  function _stream:write(...)
+    checkArg(1, ..., "string")
 
+    local str = (k.util and k.util.concat or temp)(...)
     local gpu = self.gpu
 
     -- TODO: cursor logic is a bit brute-force currently, there are certain
@@ -597,6 +602,10 @@ do
     function k.log(level, ...)
       local msg = safe_concat(...)
       msg = msg:gsub("\t", "  ")
+
+      if k.util and not k.util.concat then
+        k.util.concat = safe_concat
+      end
     
       if (tonumber(k.cmdline.loglevel) or 1) <= level then
         k.logio:write(string.format("[\27[35m%4.4f\27[37m] %s\n", k.uptime(),
@@ -1307,19 +1316,28 @@ do
     
     path = clean(path)
     resolving[path] = true
+
+    k.log(k.loglevels.info, "FSAPI RESOLVE:", path)
     
-    local current, parent = faux
+    local current, parent = mounts["/"] or faux
+
+    for _k, v in pairs(current.children) do
+      k.log(k.loglevels.info, "FSAPI DEBUG:", _k, v)
+    end
     
     if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
+
+    if path == "" or path == "/" then
+      return mounts["/"], nil, ""
+    end
     
     if current.children[path] then
-      return current.children[path]
+      return current.children[path], nil, ""
     end
     
     local segments = split(path)
-    table.insert(segments, 1, "/")
     
     local base_n = 1 -- we may have to traverse multiple mounts
     
@@ -1342,7 +1360,7 @@ do
         
         parent = current
         current = next_node
-      elseif not current.node:stat(try) then
+      elseif not current.node or not current.node:stat(try) then
         resolving[path] = false
 
         return nil, fs.errors.file_not_found
@@ -1621,16 +1639,45 @@ do
     return node.node:touch(path .. "/" .. base, ftype)
   end
 
+  local n = {}
+  function fs.api.list(path)
+    checkArg(1, path, "string")
+    
+    local node, err, path = resolve(path)
+
+    if not node then
+      return nil, err
+    end
+
+    local ok, err = node.node:list(path)
+    if not ok and err then
+      return nil, err
+    end
+
+    ok = ok or {}
+
+    if node.children then
+      for k in pairs(node.children) do
+        if (fs.api.stat(path.."/"..k) or n).isDirectory then
+          k = k .. "/"
+        end
+        ok[#ok + 1] = k
+      end
+    end
+   
+    return ok
+  end
+
   function fs.api.remove(file)
     checkArg(1, file, "string")
     
-    local node, err, pack = resolve(root)
+    local node, err, path = resolve(root)
     
     if not node then
       return nil, err
     end
     
-    return node.node:remove(file)
+    return node.node:remove(path)
   end
 
   local mounted = {}
@@ -1680,14 +1727,14 @@ do
     else
       pnode, err, rpath = resolve(root)
     end
-    
+
     if not pnode then
       return nil, err
     end
     
     local full = clean(string.format("%s/%s", rpath, fname))
     if full == "" then full = "/" end
-    
+
     if type(node) == "string" then
       pnode.children[full] = node
     else
@@ -1974,9 +2021,10 @@ do
  
   local mt = {
     __index = function(t, k)
+      if not k.scheduler then return k.logio end
       local info = k.scheduler.info()
   
-      if info.data.io[k] then
+      if info and info.data and info.data.io and info.data.io[k] then
         return info.data.io[k]
       end
       
@@ -1984,6 +2032,7 @@ do
     end,
     __newindex = function(t, k, v)
       local info = k.scheduler.info()
+      if not info then return nil end
       info.data.io[k] = v
       info.handles[im[k]] = v
     end
@@ -2056,6 +2105,9 @@ do
     return function(v)
       if v then checkArg(1, v, "FILE*") end
 
+      if not k.scheduler.info() then
+        return k.logio
+      end
       local t = k.scheduler.info().data.io
     
       if v then
@@ -2109,7 +2161,8 @@ do
       args[i] = tostring(args[i])
     end
     
-    return io.write(table.concat(args, "  ", 1, args.n), "\n")
+    return (io.stdout or k.logio):write(
+      table.concat(args, "  ", 1, args.n), "\n")
   end
 end
 
@@ -2964,9 +3017,33 @@ k.log(k.loglevels.info, "sysfs/sysfs")
 
 do
   local tree = {
-    components = {dir = true},
+    components = {
+      dir = true,
+      ["by-address"] = {dir = true},
+      ["by-type"] = {dir = true}
+    },
     proc = {dir = true},
-    dev = {dir = true},
+    dev = {
+      dir = true,
+      stdin = {
+        dir = false,
+        open = function()
+          return io.stdin
+        end
+      },
+      stdout = {
+        dir = false,
+        open = function()
+          return io.stdout
+        end
+      },
+      stderr = {
+        dir = false,
+        open = function()
+          return io.stderr
+        end
+      },
+    },
     mounts = {
       dir = false,
       read = function(h)
@@ -2992,7 +3069,9 @@ do
   }
 
   local function find(f)
-    if f == "/" then
+    k.log(k.loglevels.info, "SYSFS FIND:", f)
+
+    if f == "/" or f == "" then
       return tree
     end
 
@@ -3000,6 +3079,7 @@ do
     local c = tree
     
     for i=1, #s, 1 do
+      k.log(k.loglevels.info, "SYSFS CHECK SEGMENT:", s[i])
       if s[i] == "dir" then
         return nil, k.fs.errors.file_not_found
       end
@@ -3007,6 +3087,8 @@ do
       if not c[s[i]] then
         return nil, k.fs.errors.file_not_found
       end
+
+      k.log(k.loglevels.info, "SYSFS SEGMENT IS VALID")
       
       c = c[s[i]]
     end
@@ -3020,7 +3102,6 @@ do
     checkArg(1, f, "string")
     
     local n, e = find(f)
-    local e = tree[f]
     
     if n then
       return {
@@ -3175,7 +3256,7 @@ do
   -- we have to hook this here since the root filesystem isn't mounted yet
   -- when the kernel reaches this point.
   k.hooks.add("sandbox", function()
-    assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "/sys"))
+    assert(k.fs.api.mount(obj, k.fs.api.types.NODE, "sys"))
     -- Adding the sysfs API to userspace is probably not necessary for most
     -- things.  If it does end up being necessary I'll do it.
     --k.userspace.package.loaded.sysfs = k.util.copy_table(api)
@@ -3352,23 +3433,56 @@ k.log(k.loglevels.info, "sysfs/handlers/component")
 
 do
   local n = {}
+  local gpus, screens = {}, {}
+
+  local function update_ttys(a, c)
+    if c == "gpu" then
+      gpus[a] = false
+    elseif c == "screen" then
+      screens[a] = false
+    end
+
+    for gk, gv in pairs(gpus) do
+      if not gv then
+        for sk, sv in pairs(screens) do
+          if not sv then
+            k.create_tty(gk, sk)
+            gpus[gk] = true
+            screens[vk] = true
+            break
+          end
+        end
+      end
+    end
+  end
+
   local function added(addr, ctype)
     n[ctype] = n[ctype] or 0
-    local path = "/sys/dev/by-address/" .. addr
-    local path2 = "/sys/dev/by-type/" .. ctype .. n[ctype]
+    
+    local path = "/sys/components/by-address/" .. addr
+    local path2 = "/sys/components/by-type/" .. ctype .. "/" .. n[ctype]
+    
     n[ctype] = n[ctype] + 1
+    
     local s = k.sysfs.register(ctype, addr, path)
     if not s then
       s = k.sysfs.register("generic", addr, path)
-      s = k.sysfs.register("generic", addr, path2)
+      k.sysfs.register("generic", addr, path2)
     else
       k.sysfs.register(ctype, addr, path2)
     end
+
+    if ctype == "gpu" or ctype == "screen" then
+      update_ttys(addr, ctype)
+    end
+    
     return s
   end
 
   local function removed(addr, ctype)
-    local path = "/sys/dev/by-address/" .. addr
+    local path = "/sys/components/by-address/" .. addr
+    local path2 = "/sys/components/by-type/" .. addr
+    k.sysfs.unregister(path2)
     return k.sysfs.unregister(path)
   end
 
