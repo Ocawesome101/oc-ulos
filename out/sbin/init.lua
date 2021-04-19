@@ -10,7 +10,7 @@ do
   rf._RUNNING_ON = "ULOS 21.04-r0"
   
   io.write("\n  \27[97mWelcome to \27[93m", rf._RUNNING_ON, "\27[97m!\n\n")
-  local version = "2021.04.18"
+  local version = "2021.04.19"
   rf._VERSION = string.format("%s r%s-%s", rf._NAME, rf._RELEASE, version)
 end
 
