@@ -1648,8 +1648,6 @@ do
       return nil, err
     end
 
-    k.log(k.loglevels.info, "FSAPI LIST", path)
-
     ok = ok or {}
 
     if node.children then
@@ -3013,6 +3011,7 @@ k.log(k.loglevels.info, "sysfs/sysfs")
 
 do
   local tree = {
+    dir = true,
     components = {
       dir = true,
       ["by-address"] = {dir = true},
@@ -3120,7 +3119,6 @@ do
     local n, e = find(d)
     
     if not n then return nil, e end
-    k.log(k.loglevels.info, "SYSFS LIST", '"'..d..'"')
     if not n.dir then return nil, k.fs.errors.not_a_directory end
     
     local f = {}
