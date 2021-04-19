@@ -1309,7 +1309,7 @@ do
   local faux = {children = mounts}
   local resolving = {}
 
-  local function resolve(path)
+  local function resolve(path, must_exist)
     if resolving[path] then
       return nil, "recursive mount detected"
     end
@@ -1317,14 +1317,8 @@ do
     path = clean(path)
     resolving[path] = true
 
-    k.log(k.loglevels.info, "FSAPI RESOLVE:", path)
-    
     local current, parent = mounts["/"] or faux
 
-    for _k, v in pairs(current.children) do
-      k.log(k.loglevels.info, "FSAPI DEBUG:", _k, v)
-    end
-    
     if not mounts["/"] then
       return nil, "root filesystem is not mounted!"
     end
@@ -1345,7 +1339,7 @@ do
       local try = table.concat(segments, "/", base_n, i)
     
       if current.children[try] then
-        base_n = i -- we are now at this stage of the path
+        base_n = i + 1 -- we are now at this stage of the path
         local next_node = current.children[try]
       
         if type(next_node) == "string" then
@@ -1360,7 +1354,7 @@ do
         
         parent = current
         current = next_node
-      elseif not current.node or not current.node:stat(try) then
+      elseif not current.node:stat(try) then
         resolving[path] = false
 
         return nil, fs.errors.file_not_found
@@ -1370,7 +1364,7 @@ do
     resolving[path] = false
     local ret = "/"..table.concat(segments, "/", base_n, #segments)
     
-    if must_exist and not current.node:exists(ret) then
+    if must_exist and not current.node:stat(ret) then
       return nil, fs.errors.file_not_found
     end
     
@@ -1614,10 +1608,10 @@ do
     local node, err, path = resolve(file)
     
     if not node then
-      return false
+      return nil, err
     end
     
-    return node.node:stat(file)
+    return node.node:stat(path)
   end
 
   function fs.api.touch(file, ftype)
@@ -1643,16 +1637,18 @@ do
   function fs.api.list(path)
     checkArg(1, path, "string")
     
-    local node, err, path = resolve(path)
+    local node, err, fpath = resolve(path, true)
 
     if not node then
       return nil, err
     end
 
-    local ok, err = node.node:list(path)
+    local ok, err = node.node:list(fpath)
     if not ok and err then
       return nil, err
     end
+
+    k.log(k.loglevels.info, "FSAPI LIST", path)
 
     ok = ok or {}
 
@@ -3069,8 +3065,6 @@ do
   }
 
   local function find(f)
-    k.log(k.loglevels.info, "SYSFS FIND:", f)
-
     if f == "/" or f == "" then
       return tree
     end
@@ -3079,7 +3073,6 @@ do
     local c = tree
     
     for i=1, #s, 1 do
-      k.log(k.loglevels.info, "SYSFS CHECK SEGMENT:", s[i])
       if s[i] == "dir" then
         return nil, k.fs.errors.file_not_found
       end
@@ -3088,8 +3081,6 @@ do
         return nil, k.fs.errors.file_not_found
       end
 
-      k.log(k.loglevels.info, "SYSFS SEGMENT IS VALID")
-      
       c = c[s[i]]
     end
 
@@ -3129,11 +3120,12 @@ do
     local n, e = find(d)
     
     if not n then return nil, e end
+    k.log(k.loglevels.info, "SYSFS LIST", '"'..d..'"')
     if not n.dir then return nil, k.fs.errors.not_a_directory end
     
     local f = {}
     
-    for k, v in pairs(e) do
+    for k, v in pairs(n) do
       if k ~= "dir" then
         f[#f+1] = k
       end
