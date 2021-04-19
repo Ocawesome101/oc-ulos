@@ -25,7 +25,7 @@ _G.main = function(args)
   for _, dir in ipairs(seq) do
     build(dir)
   end
-  ex("rm -r out")
+  ex("rm -rv out")
   ex("mkdir -p out/sbin")
   ex("cp cynosure/kernel.lua out/init.lua")
   ex("cp refinement/refinement.lua out/sbin/init.lua")

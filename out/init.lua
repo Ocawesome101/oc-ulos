@@ -619,25 +619,25 @@ do
     computer.beep(440, 0.25)
     computer.beep(380, 0.25)
     
-    k.log(k.loglevels.panic, "-- \27[31mbegin stacktrace\27[37m --")
+    k.log(k.loglevels.panic, "-- \27[91mbegin stacktrace\27[37m --")
     
     local traceback = debug.traceback(msg, 2)
       :gsub("\t", "  ")
-      :gsub("([^\n]+):(%d+):", "\27[36m%1\27[37m:\27[35m%2\27[37m:")
-      :gsub("'([^']+)'\n", "\27[33m'%1'\27[37m\n")
+      :gsub("([^\n]+):(%d+):", "\27[96m%1\27[37m:\27[95m%2\27[37m:")
+      :gsub("'([^']+)'\n", "\27[93m'%1'\27[37m\n")
     
     for line in traceback:gmatch("[^\n]+") do
       k.log(k.loglevels.panic, line)
     end
 
-    k.log(k.loglevels.panic, "-- \27[31mend stacktrace\27[37m --")
-    k.log(k.loglevels.panic, "\27[33m!! \27[31mPANIC\27[33m !!\27[37m")
+    k.log(k.loglevels.panic, "-- \27[91mend stacktrace\27[37m --")
+    k.log(k.loglevels.panic, "\27[93m!! \27[91mPANIC\27[93m !!\27[37m")
     
     while true do raw_pullsignal() end
   end
 end
 
-k.log(k.loglevels.info, "Starting\27[97m", _OSVERSION, "\27[37m")
+k.log(k.loglevels.info, "Starting\27[93m", _OSVERSION, "\27[37m")
 
 
 -- kernel hooks
@@ -2960,6 +2960,8 @@ end
 
 -- sysfs API --
 
+k.log(k.loglevels.info, "sysfs/sysfs")
+
 do
   local tree = {
     components = {dir = true},
@@ -3183,6 +3185,8 @@ end
 
 -- sysfs handlers
 
+k.log(k.loglevels.info, "sysfs/handlers")
+
 do
   local util = {}
   function util.mkfile(data)
@@ -3234,6 +3238,8 @@ do
 
 -- sysfs: Generic component handler
 
+k.log(k.loglevels.info, "sysfs/handlers/generic")
+
 do
   local function mknew(addr)
     return {
@@ -3250,6 +3256,8 @@ end
 
 -- sysfs: Directory generator
 
+k.log(k.loglevels.info, "sysfs/handlers/directory")
+
 do
   local function mknew()
     return { dir = true }
@@ -3260,6 +3268,8 @@ end
 
 
 -- sysfs: Process handler
+
+k.log(k.loglevels.info, "sysfs/handlers/process")
 
 do
   local function mknew(proc)
@@ -3312,6 +3322,8 @@ end
 
 -- sysfs: TTY device handling
 
+k.log(k.loglevels.info, "sysfs/handlers/tty")
+
 do
   local function mknew(tty)
     return {
@@ -3329,8 +3341,41 @@ do
 end
 
 
-  -- component-specific handlers
+-- component-specific handlers
 -- #include "sysfs/handlers/"
+
+-- component event handler
+
+-- sysfs: component event handlers
+
+k.log(k.loglevels.info, "sysfs/handlers/component")
+
+do
+  local n = {}
+  local function added(addr, ctype)
+    n[ctype] = n[ctype] or 0
+    local path = "/sys/dev/by-address/" .. addr
+    local path2 = "/sys/dev/by-type/" .. ctype .. n[ctype]
+    n[ctype] = n[ctype] + 1
+    local s = k.sysfs.register(ctype, addr, path)
+    if not s then
+      s = k.sysfs.register("generic", addr, path)
+      s = k.sysfs.register("generic", addr, path2)
+    else
+      k.sysfs.register(ctype, addr, path2)
+    end
+    return s
+  end
+
+  local function removed(addr, ctype)
+    local path = "/sys/dev/by-address/" .. addr
+    return k.sysfs.unregister(path)
+  end
+
+  k.event.register("component_added", added)
+  k.event.register("component_removed", removed)
+end
+
 
 end -- sysfs handlers: Done
 
