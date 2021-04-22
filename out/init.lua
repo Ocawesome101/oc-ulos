@@ -3611,9 +3611,12 @@ end
 -- register components with the sysfs, if possible
 do
   k.log(k.loglevels.info, "Registering components")
-  for k, v in component.list() do
-    computer.pushSignal("component_added", k, v)
-    repeat local x = computer.pullSignal() until x == "component_added"
+  for kk, v in component.list() do
+    computer.pushSignal("component_added", kk, v)
+    repeat
+      local x = table.pack(computer.pullSignal())
+      k.event.handle(x)
+    until x[1] == "component_added"
   end
 end
 
