@@ -38,7 +38,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.19"
+  k._VERSION = "2021.04.21"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -397,6 +397,10 @@ do
               (signal[3] > 255 and unicode.char or string.char)(signal[3])
     local ch = signal[3]
     local tw = char
+
+    if ch == 0 and not aliases[signal[4]] then
+      return
+    end
     
     if #char == 1 and ch == 0 then
       char = ""
@@ -438,16 +442,16 @@ do
   function _stream:read(n)
     checkArg(1, n, "number")
 
-    if self.attributes.line then
+    --[[if self.attributes.line then
       while (not self.rb:find("\n")) or (self.rb:find("\n") < n)
           and not self.rb:find("\4") do
         coroutine.yield()
       end
-    else
+    else--]]
       while #self.rb < n and (self.attributes.raw or not self.rb:find("\4")) do
         coroutine.yield()
       end
-    end
+    --end
 
     if self.rb:find("\4") then
       self.rb = ""
@@ -518,7 +522,6 @@ do
     new.key_handler_id = k.event.register("key_down", function(...)
       return new:key_down(...)
     end)
-
     
     -- register the TTY with the sysfs
     if k.sysfs then
@@ -539,22 +542,12 @@ do
   local event = {}
   local handlers = {}
 
-  local pull = computer.pullSignal
-  computer.pullSignalOld = pull
-
-  function computer.pullSignal(timeout)
-    checkArg(1, timeout, "number", "nil")
-    
-    local sig = table.pack(pull(timeout))
-    if sig.n == 0 then return nil end
-    
+  function event.handle(sig)
     for _, v in pairs(handlers) do
       if v.signal == sig[1] then
         v.callback(table.unpack(sig))
       end
     end
-    
-    return table.unpack(sig)
   end
 
   local n = 0
@@ -597,7 +590,7 @@ do
     local msg = ""
   
     for i=1, args.n, 1 do
-      msg = string.format("%s%s ", msg, tostring(args[i]))
+      msg = string.format("%s%s%s", msg, tostring(args[i]), i < args.n and " " or "")
     end
     return msg
   end
@@ -625,8 +618,7 @@ do
     end
   end
 
-  local raw_pullsignal = computer.pullSignalOld
-  computer.pullSignalOld = nil
+  local raw_pullsignal = computer.pullSignal
   
   function k.panic(...)
     local msg = safe_concat(...)
@@ -2298,6 +2290,7 @@ do
     k.userspace.component = nil
     k.userspace.computer = nil
     k.userspace.unicode = nil
+
     k.userspace.package.loaded.component = {}
     
     for f,v in pairs(component) do
@@ -2324,6 +2317,8 @@ do
     local ufs = k.userspace.package.loaded.filesystem
     ufs.mount = wrap(k.fs.api.mount, perms.user.MOUNT)
     ufs.umount = wrap(k.fs.api.umount, perms.user.MOUNT)
+
+    k.userspace.package.loaded.users = k.util.copy_table(k.security.users)
   end)
 end
 
@@ -2567,6 +2562,8 @@ do
     checkArg(1, pname, "string", "nil")
 
     pname = pname or k.scheduler.info().name
+
+    local n = math.random(1, 999999999)
     open[n] = pname
     
     return n
@@ -2579,7 +2576,9 @@ do
       return nil, "bad file descriptor"
     end
     
-    k.log(open[n] .. ":", ...)
+    k.log(k.loglevels.info, open[n] .. ":", ...)
+
+    return true
   end
 
   function syslog.close(n)
@@ -2590,6 +2589,8 @@ do
     end
     
     open[n] = nil
+
+    return true
   end
 
   k.hooks.add("sandbox", function()
@@ -2878,6 +2879,8 @@ do
       --k.log(k.loglevels.info, min_timeout)
       
       local sig = table.pack(pullSignal(min_timeout))
+      k.event.handle(sig)
+
       for k, v in pairs(processes) do
         if (v.deadline <= computer.uptime() or #v.queue > 0 or sig.n > 0) and
             not (v.stopped or going_to_run[v.pid] or v.dead) then
@@ -2895,8 +2898,8 @@ do
         current = i
       
         if #proc.queue > 0 then -- the process has queued signals
-          proc:push_signal(table.unpack(sig))
-          psig = proc:pull_signal()
+          proc:push_signal(table.unpack(sig)) -- we don't want to drop this signal
+          psig = proc:pull_signal() -- pop a signal
         end
         
         local start_time = computer.uptime()
