@@ -389,6 +389,10 @@ do
   function _stream:key_down(...)
     local signal = table.pack(...)
 
+    if not self.keyboards[signal[2]] then
+      return
+    end
+
     if signal[3] == 0 and signal[4] == 0 then
       return
     end
@@ -1775,6 +1779,41 @@ end
 -- the Lua standard library --
 
 
+-- stdlib: os
+
+do
+  function os.execute()
+    error("os.execute must be implemented by userspace", 0)
+  end
+
+  function os.setenv(k, v)
+    local info = k.scheduler.info()
+    info.env[k] = v
+  end
+
+  function os.getenv(k)
+    local info = k.scheduler.info()
+    
+    if not k then
+      return info.env
+    end
+
+    return info.env[k]
+  end
+
+  function os.sleep(n)
+    checkArg(1, n, "number")
+
+    local max = computer.uptime() + n
+    repeat
+      coroutine.yield(max - computer.uptime())
+    until computer.uptime() >= max
+
+    return true
+  end
+end
+
+
 -- implementation of the FILE* API --
 
 k.log(k.loglevels.info, "base/stdlib/FILE*")
@@ -2740,6 +2779,7 @@ do
       coroutine = {},
       cputime = 0,
       deadline = 0,
+      env = setmetatable({}, {__index = args.env})
     }, proc_mt)
     
     args.stdin, args.stdout, args.stderr,
@@ -2794,6 +2834,7 @@ do
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
+      env = parent.env
     }
     
     new:add_thread(args.func)
@@ -2836,7 +2877,8 @@ do
         io = proc.io,
         self = proc,
         handles = proc.handles,
-        coroutine = proc.coroutine
+        coroutine = proc.coroutine,
+        env = proc.env
       }
     end
     
@@ -3439,20 +3481,14 @@ k.log(k.loglevels.info, "sysfs/handlers/component")
 do
   local n = {}
   local gpus, screens = {}, {}
-  gpus[k.logio.gpu] = true
+  gpus[k.logio.gpu.address] = true
   screens[k.logio.gpu.getScreen()] = true 
 
   local function update_ttys(a, c)
     if c == "gpu" then
-      if gpus[a] ~= nil then
-        return
-      end
-      gpus[a] = false
+      gpus[a] = gpus[a] or false
     elseif c == "screen" then
-      if screens[a] ~= nil then
-        return
-      end
-      screens[a] = false
+      screens[a] = screens[a] or false
     else
       return
     end
@@ -3466,7 +3502,7 @@ do
             k.create_tty(gk, sk)
             gpus[gk] = true
             screens[sk] = true
-            break
+            gv, sv = true, true
           end
         end
       end
