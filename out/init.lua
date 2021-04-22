@@ -38,7 +38,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.21"
+  k._VERSION = "2021.04.22"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -1049,7 +1049,7 @@ do
     [0] = {
       name = "root",
       home = "/root",
-      shell = "/bin/rc",
+      shell = "/bin/sh",
       acls = 8191,
       pass = k.util.to_hex(k.sha3.sha256("root")),
     }
@@ -1058,7 +1058,7 @@ do
   function api.prime(data)
     checkArg(1, data, "table")
  
-    k.userspace.package.loaded.users.prime = nil
+    api.prime = nil
     passwd = data
     
     return true
@@ -1090,8 +1090,8 @@ do
     checkArg(4, pname, "string", "nil")
     checkArg(5, wait, "boolean", "nil")
     
-    if not k.acl.user_has_permission(k.scheduler.info().owner,
-        k.acl.permissions.user.SUDO) then
+    if not k.security.acl.user_has_permission(k.scheduler.info().owner,
+        k.security.acl.permissions.user.SUDO) then
       return nil, "permission denied: no permission"
     end
     
@@ -2789,10 +2789,10 @@ do
     local new = k.create_process {
       name = args.name,
       parent = parent.pid or 0,
-      stdin = parent.stdin or args.stdin,
-      stdout = parent.stdout or args.stdout,
-      input = args.input or parent.stdin,
-      output = args.output or parent.stdout,
+      stdin = parent.stdin or (io and io.input()) or args.stdin,
+      stdout = parent.stdout or (io and io.output()) or args.stdout,
+      input = args.input or parent.stdin or (io and io.input()),
+      output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
     }
     
@@ -2896,7 +2896,7 @@ do
 
       for i, proc in ipairs(to_run) do
         local psig = sig
-        current = i
+        current = proc.pid
       
         if #proc.queue > 0 then -- the process has queued signals
           proc:push_signal(table.unpack(sig)) -- we don't want to drop this signal
@@ -3453,12 +3453,16 @@ do
         return
       end
       screens[a] = false
+    else
+      return
     end
 
     for gk, gv in pairs(gpus) do
       if not gv then
         for sk, sv in pairs(screens) do
           if not sv then
+            k.log(k.loglevels.info, string.format(
+              "Creating TTY on [%s:%s]", gk:sub(1, 8), (sk:sub(1, 8))))
             k.create_tty(gk, sk)
             gpus[gk] = true
             screens[sk] = true
@@ -3510,6 +3514,60 @@ end -- sysfs handlers: Done
 
 
 
+
+
+-- load /etc/passwd, if it exists
+
+k.log(k.loglevels.info, "base/passwd_init")
+
+do
+  local p1 = "(%d+):([^:]+):([0-9a-fA-F]+):(%d+):([^:]+):([^:]+)"
+  local p2 = "(%d+):([^:]+):([0-9a-fA-F]+):(%d+):([^:]+)"
+  local p3 = "(%d+):([^:]+):([0-9a-fA-F]+):(%d+)"
+
+  k.log(k.loglevels.info, "Reading /etc/passwd")
+
+  local handle, err = io.open("/etc/passwd", "r")
+  if not handle then
+    k.log(k.loglevels.info, "Failed opening /etc/passwd:", err)
+  else
+    local data = {}
+    
+    for line in handle:lines("l") do
+      -- user ID, user name, password hash, ACLs, home directory,
+      -- preferred shell
+      local uid, uname, pass, acls, home, shell
+      uid, uname, pass, acls, home, shell = line:match(p1)
+      if not uid then
+        uid, uname, pass, acls, home = line:match(p2)
+      end
+      if not uid then
+        uid, uname, pass, acls = line:match(p3)
+      end
+      uid = tonumber(uid)
+      if not uid then
+        k.log(k.loglevels.info, "Invalid line:", line, "- skipping")
+      else
+        data[uid] = {
+          name = uname,
+          pass = pass,
+          acls = acls,
+          home = home,
+          shell = shell
+        }
+      end
+    end
+  
+    handle:close()
+  
+    k.log(k.loglevels.info, "Registering user data")
+  
+    k.security.users.prime(data)
+
+    k.log(k.loglevels.info,
+      "Successfully registered user data from /etc/passwd")
+  end
+end
 
 
 -- load init, i guess

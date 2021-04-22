@@ -2,7 +2,7 @@
 
 local users = require("users")
 
-io.write("\n\nWelcome to ULOS.\n\n")
+io.write("\27?0c\27[39;49m\nWelcome to ULOS.\n\n")
 
 while true do
   io.write("\27?0clogin: ")
@@ -23,11 +23,11 @@ while true do
       if not shell:match("%.lua$") then
         shell = string.format("%s.lua", shell)
       end
-      local shell, sherr = loadfile(shell)
-      if not shell then
+      local shellf, sherr = loadfile(shell)
+      if not shellf then
         io.write("failed loading shell: ", sherr, "\n\n")
       else
-        users.exec_as(uid, pw, shell, shell, true)
+        users.exec_as(uid, pw, shellf, shell, true)
       end
     end
   end
