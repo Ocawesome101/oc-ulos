@@ -45,7 +45,9 @@ else
             name = "login[tty" .. n .. "]",
             func = login,
             stdin = handle,
-            stdout = handle
+            stdout = handle,
+            input = handle,
+            output = handle
           }
         end
       end
