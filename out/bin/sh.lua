@@ -1,11 +1,16 @@
 -- a shell.
 
+local fs = require("filesystem")
+local pipe = require("pipe")
+local process = require("process")
 local tokenizer = require("tokenizer")
 local w_iter = tokenizer.new()
 
+local def_path = "/bin:/sbin:/usr/bin"
+
 w_iter.discard_whitespace = false
 w_iter:addToken("bracket", "()[]{}")
-w_iter:addToken("splitter", "$|&\"' ")
+w_iter:addToken("splitter", "$|&\"'; ")
 
 local function tkiter()
   return w_iter:matchToken()
@@ -42,26 +47,149 @@ local alt = {
   ["["] = "]"
 }
 
-local function run_programs(programs)
+local splitc = {
+  ["|"] = true,
+  [";"] = true,
+  ["&"] = true
+}
+
+local var_decl = "([^ ]+)=(.+)"
+
+local function resolve_program(program)
+  local pwd = os.getenv("PWD")
+  local path = os.getenv("PATH") or def_path
+  if program:match("/") then
+    local relative = string.format("%s/%s", pwd, path)
+    if fs.stat(relative) then
+      return relative
+    end
+  end
+  for entry in path:gmatch("[^:]+") do
+    local try = string.format("%s/%s", entry, path)
+    if fs.stat(try) then
+      return try
+    end
+  end
+  return nil, "sh: " .. program .. ": command not found"
+end
+
+local function run_programs(programs, getout)
+  local sequence = {{}}
+  local execs = {}
+  for i, token in ipairs(programs) do
+    if splitc[token] then
+      if #sequence[#sequence] > 0 then
+        sequence[#sequence + 1] = {}
+      else
+        return nil, "sh: syntax error near unexpected token '"..token.."'"
+      end
+    else
+      table.insert(sequence[#sequence], token)
+    end
+  end
+
+  if #sequence[1] == 0 then
+    return true
+  end
+
+  for i, program in ipairs(sequence) do
+    if type(program) ~= "string" then
+      local prg_env = {}
+      program.env = prg
+      while program[1]:match(var_decl) do
+        local k, v = table.remove(program, 1):match(var_decl)
+        prg_env[k] = v
+      end
+      program[0] = program[1]
+      local pre
+      program[1], pre = resolve_program(program[1])
+      if not program[1] and pre then
+        return nil, pre
+      end
+      for i, token in ipairs(program) do
+        if token:match("%$([^ ]+)") then
+          program[i] = os.getenv(token:sub(2))
+        end
+      end
+      execs[#execs + 1] = program
+    elseif program == "|" then
+      if type(sequence[i - 1]) == "string" or type(sequence[i + 1]) == "string" then
+        return nil, "sh: syntax error near unexpected token '|'"
+      end
+      local pipe = pipe.create()
+      sequence[i - 1].output = pipe
+      sequence[i + 1].input = pipe
+    end
+  end
+
+  for i, program in ipairs(programs) do
+    local exec, err = loadfile(program[1])
+    if not exec then
+      return nil, "sh: " .. program[0] .. ": command not found"
+    end
+    local pid = process.spawn {
+      func = function()
+        for k, v in pairs(program.env) do
+          os.setenv(k, v)
+        end
+        if program.input then
+          io.input(program.input)
+        end
+        if program.output then
+          io.output(program.output)
+        end
+        local ok, err, ret1 = pcall(exec, table.unpack(program, 2))
+        if not ok and err then
+          io.stderr:write(program[0], ": ", err, "\n")
+          os.exit(127)
+        elseif not err and ret1 then
+          io.stderr:write(program[0], ": ", err, "\n")
+          os.exit(127)
+        end
+        os.exit(0)
+      end,
+      name = table.concat(program) or program[1],
+      stdin = program.input,
+      input = program.input,
+      stdout = program.output,
+      output = program.output,
+      stderr = program.stderr
+                or io.stderr
+    }
+
+    process.await(pid)
+  end
+  return true
 end
 
 local function parse(cmd)
   local ret = {}
   local words = split(cmd)
   for i=1, #words, 1 do
-    print(words[i])
+    token = token:gsub("\n", "")
     local token = words[i]
     local preceding = token_st[#token_st]
     if token:match("[%(%{%[]") then -- opening bracket
-      push(token)
-      ret[#ret + 1] = ""
+      if preceding == "$" then
+        push(token)
+        ret[#ret + 1] = ""
+      else
+        return nil, "sh: syntax error near unexpected token '" .. token .. "'"
+      end
     elseif token:match("[%)%]%}]") then -- closing bracket
       local ttok = pop()
       if token ~= alt[ttok] then
-        return nil, "sh: unexpected token near '" .. token .. "'"
+        return nil, "sh: syntax error near unexpected token '" .. token .. "'"
       end
-      ret[#ret] = parse(ret[#ret])
-      ret[#ret] = run_programs(ret[#ret])
+      local pok, perr = parse(ret[#ret])
+      if not pok then
+        return nil, perr
+      end
+      local rok, rerr = run_programs(pok, true)
+      if not rok then
+        return nil, rerr
+      end
+      ret[#ret] = rok
     elseif token:match([["']]) then
       if state.quoted and token == state.quoted then
         state.quoted = false
@@ -69,15 +197,25 @@ local function parse(cmd)
         state.quoted = token
         ret[#ret + 1] = ""
       end
-    elseif preceding:match("[%(%[{]") then
+    elseif preceding and preceding:match("[%(%[{]") then
       table.insert(ret[#ret], token)
     elseif state.quoted then
       ret[#ret] = ret[#ret] .. token
-    else
+    elseif token:match(" ") then
+      if ret[#ret] ~= "" then ret[#ret + 1] = "" end
+    elseif #token > 0 then
       ret[#ret + 1] = token
     end
   end
   return ret
+end
+
+local function execute(cmd)
+  local data, err = parse(cmd)
+  if not data then
+    return nil, err
+  end
+  return run_programs(data)
 end
 
 while true do

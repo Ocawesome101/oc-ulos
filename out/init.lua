@@ -806,6 +806,57 @@ do
     if not a then error(..., 0) else return a, ... end
   end
 
+  -- pipes for IPC and shells and things
+  do
+    local _pipe = {}
+
+    function _pipe:read(n)
+      if self.closed then
+        return nil
+      end
+      while #self.rb < n and not self.closed do
+        if self.from ~= 0 then
+          k.scheduler.info().data.self.resume_next = self.from
+        end
+        coroutine.yield()
+      end
+      local data = self.rb:sub(1, n)
+      self.rb = self.rb:sub(n + 1)
+      return data
+    end
+
+    function _pipe:write(dat)
+      if self.closed then
+        return nil
+      end
+      self.rb = self.rb .. dat
+      return true
+    end
+
+    function _pipe:flush()
+      return true
+    end
+
+    function _pipe:close()
+      self.closed = true
+      return true
+    end
+
+    function util.make_pipe()
+      return setmetatable({
+        from = 0, -- the process providing output
+        to = 0, -- the process reading input
+        rb = "",
+      }, {__index = _pipe})
+    end
+
+    k.hooks.add("sandbox", function()
+      k.userspace.package.loaded.pipe = {
+        create = util.make_pipe
+      }
+    end)
+  end
+
   k.util = util
 end
 
@@ -1786,19 +1837,19 @@ do
     error("os.execute must be implemented by userspace", 0)
   end
 
-  function os.setenv(k, v)
+  function os.setenv(K, v)
     local info = k.scheduler.info()
-    info.env[k] = v
+    info.data.env[K] = v
   end
 
-  function os.getenv(k)
+  function os.getenv(K)
     local info = k.scheduler.info()
     
-    if not k then
-      return info.env
+    if not K then
+      return info.data.env
     end
 
-    return info.env[k]
+    return info.data.env[K]
   end
 
   function os.sleep(n)
@@ -2443,7 +2494,7 @@ do
     if not check(...) then
       local msg = string.format("bad argument #%d (%s expected, got %s)",
                                 n, table.concat(table.pack(...), " or "), have)
-      error(msg, 2)
+      error(msg, 3)
     end
   end
 end
@@ -2769,7 +2820,7 @@ do
         input = args.input or args.stdin or {},
         stdout = args.stdout or {},
         output = args.output or args.stdout or {},
-        stderr = args.stderr or {}
+        stderr = args.stderr or args.stdout or {}
       },
       queue = {},
       threads = {},
@@ -2899,6 +2950,17 @@ do
     return true
   end
 
+  -- XXX: this is specifically for kernel use ***only*** and userspace does NOT
+  -- XXX: get this function.  it is incredibly dangerous and should be used with
+  -- XXX: the utmost caution.
+  function api.get(pid)
+    checkArg(1, pid, "number")
+    if not processes[pid] then
+      return nil, "no such process"
+    end
+    return processes[pid]
+  end
+
   local pullSignal = computer.pullSignal
   function api.loop()
     while next(processes) do
@@ -2959,7 +3021,16 @@ do
           end
           
           err = err or "died"
-          k.log(k.loglevels.warn, "process died: ", proc.pid, exit, err)
+          -- if we can, put the process death info on the same I/O stream that
+          -- belonged to the process that died
+          if proc.io.stderr.write then
+            local old_logio = k.logio
+            k.logio = proc.io.stderr
+            k.log(k.loglevels.info, "process died:", proc.pid, exit, err)
+            k.logio = old_logio
+          else
+            k.log(k.loglevels.warn, "process died:", proc.pid, exit, err)
+          end
           computer.pushSignal("process_died", proc.pid, exit, err)
           
           for k, v in pairs(proc.handles) do
@@ -3001,7 +3072,8 @@ do
         stdin = args.stdin,
         stdout = args.stdout,
         input = args.input,
-        output = args.output
+        output = args.output,
+        stderr = args.stderr,
       }
       
       local new = api.spawn(sanitized)
