@@ -53,9 +53,12 @@ local splitc = {
   ["&"] = true
 }
 
-local var_decl = "([^ ]+)=(.+)"
+local var_decl = "([^ ]+)=(.-)"
 
 local function resolve_program(program)
+  if not program then
+    return
+  end
   local pwd = os.getenv("PWD")
   local path = os.getenv("PATH") or def_path
   if program:match("/") then
@@ -95,10 +98,23 @@ local function run_programs(programs, getout)
   for i, program in ipairs(sequence) do
     if type(program) ~= "string" then
       local prg_env = {}
-      program.env = prg
-      while program[1]:match(var_decl) do
+      program.env = prg_env
+      while #program > 0 and program[1]:match(var_decl) do
         local k, v = table.remove(program, 1):match(var_decl)
         prg_env[k] = v
+      end
+
+      if #program == 0 then
+        for k, v in pairs(prg_env) do
+          os.setenv(k, v)
+        end
+        return
+      end
+
+      for i, token in ipairs(program) do
+        if token:match("%$([^ ]+)") then
+          program[i] = os.getenv(token:sub(2))
+        end
       end
       program[0] = program[1]
       local pre
@@ -106,14 +122,10 @@ local function run_programs(programs, getout)
       if not program[1] and pre then
         return nil, pre
       end
-      for i, token in ipairs(program) do
-        if token:match("%$([^ ]+)") then
-          program[i] = os.getenv(token:sub(2))
-        end
-      end
       execs[#execs + 1] = program
     elseif program == "|" then
-      if type(sequence[i - 1]) == "string" or type(sequence[i + 1]) == "string" then
+      if type(sequence[i - 1]) == "string" or
+          type(sequence[i + 1]) == "string" then
         return nil, "sh: syntax error near unexpected token '|'"
       end
       local pipe = pipe.create()
@@ -123,6 +135,9 @@ local function run_programs(programs, getout)
   end
 
   for i, program in ipairs(programs) do
+    if not program[1] then
+      return
+    end
     local exec, err = loadfile(program[1])
     if not exec then
       return nil, "sh: " .. program[0] .. ": command not found"
@@ -166,14 +181,16 @@ local function parse(cmd)
   local ret = {}
   local words = split(cmd)
   for i=1, #words, 1 do
-    token = token:gsub("\n", "")
     local token = words[i]
-    local preceding = token_st[#token_st]
+    token = token:gsub("\n", "")
+    local opening = token_st[#token_st]
+    local preceding = words[i - 1]
     if token:match("[%(%{%[]") then -- opening bracket
       if preceding == "$" then
         push(token)
         ret[#ret + 1] = ""
       else
+        -- TODO: handle this
         return nil, "sh: syntax error near unexpected token '" .. token .. "'"
       end
     elseif token:match("[%)%]%}]") then -- closing bracket
@@ -197,14 +214,15 @@ local function parse(cmd)
         state.quoted = token
         ret[#ret + 1] = ""
       end
-    elseif preceding and preceding:match("[%(%[{]") then
+    elseif opening and opening:match("[%(%[{]") then
       table.insert(ret[#ret], token)
     elseif state.quoted then
       ret[#ret] = ret[#ret] .. token
     elseif token:match(" ") then
-      if ret[#ret] ~= "" then ret[#ret + 1] = "" end
-    elseif #token > 0 then
-      ret[#ret + 1] = token
+      if #ret[#ret] > 0 then ret[#ret + 1] = "" end
+    elseif token then
+      if #ret == 0 then ret[1] = "" end
+      ret[#ret] = ret[#ret] .. token
     end
   end
   return ret
