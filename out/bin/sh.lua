@@ -62,15 +62,24 @@ local function resolve_program(program)
   local pwd = os.getenv("PWD")
   local path = os.getenv("PATH") or def_path
   if program:match("/") then
-    local relative = string.format("%s/%s", pwd, path)
+    local relative
+    if program:sub(1,1) == "/" then
+      relative = program
+    else
+      relative = string.format("%s/%s", pwd, program)
+    end
     if fs.stat(relative) then
       return relative
+    elseif fs.stat(relative .. ".lua") then
+      return relative .. ".lua"
     end
   end
   for entry in path:gmatch("[^:]+") do
-    local try = string.format("%s/%s", entry, path)
+    local try = string.format("%s/%s", entry, program)
     if fs.stat(try) then
       return try
+    elseif fs.stat(try .. ".lua") then
+      return try .. ".lua"
     end
   end
   return nil, "sh: " .. program .. ": command not found"
@@ -134,13 +143,14 @@ local function run_programs(programs, getout)
     end
   end
 
-  for i, program in ipairs(programs) do
+  for i, program in ipairs(execs) do
     if not program[1] then
       return
     end
     local exec, err = loadfile(program[1])
     if not exec then
-      return nil, "sh: " .. program[0] .. ": command not found"
+      return nil, "sh: " .. program[0] .. ": " ..
+        (err or "command not found")
     end
     local pid = process.spawn {
       func = function()
