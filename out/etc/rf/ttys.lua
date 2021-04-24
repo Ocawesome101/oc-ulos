@@ -46,6 +46,7 @@ else
             func = login,
             stdin = handle,
             stdout = handle,
+            stderr = handle,
             input = handle,
             output = handle
           }

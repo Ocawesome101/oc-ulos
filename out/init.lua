@@ -1866,6 +1866,10 @@ do
 
     return true
   end
+
+  function os.exit(n)
+    coroutine.yield("__internal_process_exit", n)
+  end
 end
 
 
@@ -2107,21 +2111,21 @@ do
   local im = {stdin = 0, stdout = 1, stderr = 2}
  
   local mt = {
-    __index = function(t, k)
+    __index = function(t, f)
       if not k.scheduler then return k.logio end
       local info = k.scheduler.info()
   
-      if info and info.data and info.data.io and info.data.io[k] then
-        return info.data.io[k]
+      if info and info.data and info.data.io then
+        return info.data.io[f]
       end
       
       return nil
     end,
-    __newindex = function(t, k, v)
+    __newindex = function(t, f, v)
       local info = k.scheduler.info()
       if not info then return nil end
-      info.data.io[k] = v
-      info.handles[im[k]] = v
+      info.data.io[f] = v
+      info.handles[im[f]] = v
     end
   }
 
@@ -2240,6 +2244,9 @@ do
   end
 
   setmetatable(io, mt)
+  k.hooks.add("sandbox", function()
+    setmetatable(k.userspace.io, mt)
+  end)
 
   function _G.print(...)
     local args = table.pack(...)
@@ -2889,7 +2896,7 @@ do
       parent = parent.pid or 0,
       stdin = parent.stdin or (io and io.input()) or args.stdin,
       stdout = parent.stdout or (io and io.output()) or args.stdout,
-      stderr = parent.stderr or (io and io.stderr) or args.stderr,
+      stderr = args.stderr or parent.stderr or (io and io.stderr),
       input = args.input or parent.stdin or (io and io.input()),
       output = args.output or parent.stdout or (io and io.output()),
       owner = args.owner or parent.owner or 0,
@@ -2962,7 +2969,8 @@ do
   -- XXX: get this function.  it is incredibly dangerous and should be used with
   -- XXX: the utmost caution.
   function api.get(pid)
-    checkArg(1, pid, "number")
+    checkArg(1, pid, "number", current and "nil")
+    pid = pid or current
     if not processes[pid] then
       return nil, "no such process"
     end
@@ -3011,7 +3019,9 @@ do
         current = proc.pid
       
         if #proc.queue > 0 then -- the process has queued signals
-          proc:push_signal(table.unpack(sig)) -- we don't want to drop this signal
+          -- we don't want to drop this signal
+          proc:push_signal(table.unpack(sig))
+          
           psig = proc:pull_signal() -- pop a signal
         end
         
@@ -3821,7 +3831,8 @@ do
     name = "init",
     func = ok,
     input = ios,
-    output = ios
+    output = ios,
+    stderr = ios
   }
 
   k.log(k.loglevels.info, "Starting scheduler loop")

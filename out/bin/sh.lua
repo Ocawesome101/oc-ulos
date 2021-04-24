@@ -164,6 +164,7 @@ local function run_programs(programs, getout)
           io.output(program.output)
         end
         local ok, err, ret1 = pcall(exec, table.unpack(program, 2))
+        print(io.stderr, process.info().data.io.stderr)
         if not ok and err then
           io.stderr:write(program[0], ": ", err, "\n")
           os.exit(127)
@@ -252,7 +253,7 @@ while true do
   if inp then
     local ok, err = execute(inp)
     if not ok and err then
-      print(err)
+      io.stderr:write(err, "\n")
     end
   end
 end
