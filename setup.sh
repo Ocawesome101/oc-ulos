@@ -3,7 +3,7 @@
 
 switch () {
   cd $1
-  git switch "$1"
+  git switch "$2"
   cd ..
 }
 
