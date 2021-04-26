@@ -182,7 +182,7 @@ local function run_programs(programs, getout)
                 or io.stderr
     }
 
-    print(process.await(pid))
+    process.await(pid)
   end
   return true
 end

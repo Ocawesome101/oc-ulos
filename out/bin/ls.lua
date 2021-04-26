@@ -18,7 +18,7 @@ local colors = {
 }
 
 local dfa = {name = "n/a"}
-local function infoify(base, files, hook)
+local function infoify(base, files, hook, hka)
   local infos = {}
   local maxn_user = 0
   local maxn_size = 0
@@ -50,7 +50,7 @@ local function infoify(base, files, hook)
       modified = time.format(info.lastModified),
     }
     maxn_size = math.max(maxn_size, infos[i].size)
-    if hook then files[i] = hook(files[i])
+    if hook then files[i] = hook(files[i], hka) end
   end
 
   for i=1, #files, 1 do
