@@ -1,0 +1,138 @@
+#!/usr/bin/env lua
+local lfs = require("lfs") -- 3
+local env = { } -- 5
+setmetatable(env, { -- 6
+	__index = _G -- 6
+}) -- 6
+local checkstr -- 8
+checkstr = function(n, str) -- 8
+	assert((type(str)) == "string", "bad argument #" .. tostring(n) .. " (expected string, got " .. tostring(type(str)) .. ")") -- 9
+	return str -- 11
+end -- 8
+env.ex = function(...) -- 13
+	local cmd = table.concat(table.pack(...), " ") -- 14
+	local stdout, err = io.popen(cmd, "r") -- 15
+	if not stdout then -- 16
+		return nil, err -- 16
+	end -- 16
+	local data -- 17
+	if stdout ~= nil then -- 17
+		data = stdout:read("a") -- 17
+	end -- 17
+	if stdout ~= nil then -- 18
+		stdout:close() -- 18
+	end -- 18
+	return data or "" -- 19
+end -- 13
+env.ls = function(file) -- 21
+	if file == nil then -- 21
+		file = "." -- 21
+	end -- 21
+	checkstr(1, file) -- 22
+	local files -- 23
+	do -- 23
+		local _accum_0 = { } -- 23
+		local _len_0 = 1 -- 23
+		for f in lfs.dir(file) do -- 23
+			_accum_0[_len_0] = f -- 23
+			_len_0 = _len_0 + 1 -- 23
+		end -- 23
+		files = _accum_0 -- 23
+	end -- 23
+	return files -- 24
+end -- 21
+env.exists = function(file) -- 26
+	return not not lfs.attributes(checkstr(1, file)) -- 26
+end -- 26
+local patterns = { -- 28
+	name = "^.+/(.-)/?$", -- 29
+	root = "^(.+)/.-/?$" -- 30
+} -- 28
+env.fname = function(file) -- 32
+	return (file:match(patterns.name)) -- 32
+end -- 32
+env.froot = function(file) -- 33
+	return (file:match(patterns.root)) -- 33
+end -- 33
+env.abs = function(file) -- 37
+	checkstr(1, file) -- 38
+	if ((file:sub(1, 1)) == "/") then -- 39
+		return file -- 40
+	end -- 39
+	local pwd = os.getenv("PWD") -- 41
+	return ((tostring(pwd) .. "/" .. tostring(file)):gsub("[/\\]+", "/")) -- 42
+end -- 37
+env.wild = function(card) -- 44
+	checkstr(1, card) -- 45
+	local root = env.froot(card) -- 46
+	local name = env.fname(card) -- 47
+	local files = env.ls(root) -- 48
+	local ret = { } -- 49
+	for _index_0 = 1, #files do -- 50
+		local file = files[_index_0] -- 50
+		if file:match(name) then -- 51
+			table.insert(ret, root .. "/" .. file) -- 51
+		end -- 51
+	end -- 51
+	table.sort(ret) -- 52
+	return ret -- 53
+end -- 44
+env.fread = function(file) -- 55
+	checkstr(1, file) -- 56
+	local handle = assert(io.open(file, "r")) -- 57
+	if not handle then -- 58
+		return "" -- 59
+	end -- 58
+	local dat = handle:read("a") -- 60
+	handle:close() -- 61
+	return dat -- 62
+end -- 55
+env.fwrite = function(file, dat) -- 64
+	checkstr(1, file) -- 65
+	checkstr(2, dat) -- 66
+	local handle = assert(io.open(file, "w")) -- 67
+	handle:write(dat) -- 68
+	return handle:close() -- 69
+end -- 64
+setmetatable(env, { -- 71
+	__index = _G -- 71
+}) -- 71
+local statii = { -- 72
+	info = 92, -- 73
+	warn = 93, -- 74
+	err = 91 -- 75
+} -- 72
+local log -- 77
+log = function(...) -- 77
+	local status = ... -- 78
+	io.write("\27[", statii[status] or 96, "m * \27[39m", select(2, ...)) -- 79
+	return io.write("\n") -- 80
+end -- 77
+local args = table.pack(...) -- 83
+local buildsrc -- 84
+if env.exists("buildfile.lua") then -- 89
+	log("info", "using buildfile.lua") -- 90
+	buildsrc = env.fread("buildfile.lua") -- 91
+elseif env.exists("buildfile.mp") then -- 86
+	log("info", "using buildfile.mp") -- 87
+	buildsrc = assert((require("moonp")).to_lua(env.fread("buildfile.mp"))) -- 88
+else -- 92
+	log("err", "buildfile.mp or buildfile.lua not found!") -- 93
+	os.exit(1) -- 94
+end -- 86
+env.log = log -- 96
+local ok, err = load(buildsrc, "=buildfile", "bt", env) -- 97
+if not ok then -- 98
+	log("err", "buildfile: ", err) -- 99
+	os.exit(1) -- 100
+end -- 98
+ok() -- 102
+if not env.main then -- 103
+	log("err", "no main()") -- 104
+	os.exit(1) -- 105
+end -- 103
+local _obj_0 = env.main -- 106
+if _obj_0 ~= nil then -- 106
+	_obj_0(args) -- 106
+end -- 106
+return log("info", "done.") -- 107
