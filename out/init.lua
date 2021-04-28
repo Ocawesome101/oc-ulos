@@ -38,7 +38,7 @@ end
 do
   k._NAME = "Cynosure"
   k._RELEASE = "0" -- not released yet
-  k._VERSION = "2021.04.26"
+  k._VERSION = "2021.04.27"
   _G._OSVERSION = string.format("%s r%s-%s", k._NAME, k._RELEASE, k._VERSION)
 end
 
@@ -1274,8 +1274,11 @@ do
   function k.shutdown(rbt)
     k.is_shutting_down = true
     k.hooks.call("shutdown", rbt)
+    k.log(k.loglevels.info, "shutdown: shutting down")
     shutdown(rbt)
   end
+
+  computer.shutdown = k.shutdown
 end
 
 
@@ -3082,6 +3085,31 @@ do
   end
 
   k.scheduler = api
+
+  k.hooks.add("shutdown", function()
+    if not k.is_shutting_down then
+      return
+    end
+
+    k.log(k.loglevels.info, "shutdown: sending shutdown signal")
+
+    for pid, proc in pairs(processes) do
+      proc:resume("shutdown")
+    end
+
+    k.log(k.loglevels.info, "shutdown: waiting 1s for processes to exit")
+    os.sleep(1)
+
+    k.log(k.loglevels.info, "shutdown: killing all processes")
+
+    for pid, proc in pairs(processes) do
+      if pid ~= current then -- hack to make sure shutdown carries on
+        proc.dead = true
+      end
+    end
+
+    coroutine.yield(0) -- clean up
+  end)
   
   -- sandbox hook for userspace 'process' api
   k.hooks.add("sandbox", function()

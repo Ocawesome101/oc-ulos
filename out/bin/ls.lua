@@ -1,6 +1,5 @@
 -- coreutils: ls --
 
-local time = require("time")
 local text = require("text")
 local size = require("size")
 local path = require("path")
@@ -47,7 +46,7 @@ local function infoify(base, files, hook, hka)
       perms = perms,
       user = user,
       size = size.format(info.size, opts.h),
-      modified = time.format(info.lastModified),
+      modified = os.date("%b %d %H:%M", info.lastModified),
     }
     maxn_size = math.max(maxn_size, infos[i].size)
     if hook then files[i] = hook(files[i], hka) end
