@@ -7,3 +7,6 @@
 [submodule "external"]
 	path = external
 	url = git@github.com:ocawesome101/ulos-external
+[submodule "tle"]
+	path = tle
+	url = git@github.com:ocawesome101/tle.git
