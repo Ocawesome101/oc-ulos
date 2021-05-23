@@ -32,10 +32,10 @@ _G.main = function(args)
   for _, file in ipairs(extern) do
     ex("cp -rv", "external/"..file.."/*", "out/")
   end
-  -- yep, this is cursed
-  ex("cd tle; ./standalone.sh; cat tle | tail -n $(echo \"`wc -l tle | cut -d ' ' -f1` - 1\" | bc) > ../out/bin/tle.lua")
+  ex("cd tle; ./standalone.sh; cp tle ../out/bin/tle.lua")
+  ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
   log("err", "ULOS assembled")
   if args[1] == "ocvm" then
-    os.execute( "ocvm ..")
+    os.execute("ocvm ..")
   end
 end
