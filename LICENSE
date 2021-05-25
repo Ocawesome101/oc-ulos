@@ -1,27 +1,13 @@
-// DSL: the Developer's Software License, v1
+// DSL: the Developer's Software License, v2
 
-You may do anything with this software, with the
-following exceptions:
+/ Terminology:
+/ the Creator = the creator of this software
+/ the User = anyone who isn't the Creator
 
-1.  You may not claim this software as your own;
-  1a.  With proof of explicit written consent from
-       the original author, you may release a
-       modified fork of this software as your own.
-
-2.  Except where state or federal law states
-    otherwise, you may not release this software
-    or any fork of this software under another
-    license without proof of explicit and written
-    consent from its author;
-
-3.  Without proof of explicit and written consent
-    from its author, you may not release a binary
-    distribution of this software unless the
-    unmodified source code for the binary
-    distribution is freely available to the
-    general public.
+The User may do anything with this software,
+unless the Creator tells them to stop doing it.
 
 This software comes with no warranty, implied or
 otherwise.  It is free, open source, and made
-available for use by anyone and everyone.
-Technical support is not guaranteed.
+available to anyone and everyone.  Technical
+support is not guaranteed.
