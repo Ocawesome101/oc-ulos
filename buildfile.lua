@@ -4,7 +4,7 @@ local OS = "ULOS"
 local REL = os.date("%y.%m").."-r0"
 
 local seq = {
-  {name = "cynosure", flags = "-Iextra/mtarfs"},
+  {name = "cynosure", flags = ""},
   {name = "refinement", flags = ""}
 }
 
@@ -21,7 +21,7 @@ local build = function(dir)
 end
 
 _G.main = function(args)
-  for k,v in pairs(args) do args[k] = true end
+  for k,v in pairs(args) do args[v] = true end
   log("err", "Assembling ULOS")
   for _, dir in ipairs(seq) do
     build(dir)
@@ -37,13 +37,16 @@ _G.main = function(args)
   ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
   log("err", "ULOS assembled")
   if args.release then
+    log("err, Creating MTAR archive")
     if os.getenv("TERM") == "cynosure" then
-      ex("mtar --output=release.cpio (find out/)")
+      ex("mtar --output=release.mtar (find out/)")
+      ex("into release.lua (cat cynosure/mtarldr.lua cynosure/mtarldr_2.lua release.mtar)")
     else
       ex("find out -type f | utils/mtar.lua > release.mtar")
+      ex("cat cynosure/mtarldr.lua release.mtar cynosure/mtarldr_2.lua > release.lua")
     end
   end
-  if args[1].ocvm then
+  if args.ocvm then
     os.execute("ocvm ..")
   end
 end
