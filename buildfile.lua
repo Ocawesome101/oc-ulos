@@ -1,7 +1,7 @@
 -- buildfile
 
 local OS = "ULOS"
-local REL = os.date("%y.%m").."-r0"
+local REL = os.date("%y.%m").."-pre1"
 
 local seq = {
   {name = "cynosure", flags = ""},
