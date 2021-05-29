@@ -21,6 +21,7 @@ local build = function(dir)
 end
 
 _G.main = function(args)
+  for k,v in pairs(args) do args[k] = true end
   log("err", "Assembling ULOS")
   for _, dir in ipairs(seq) do
     build(dir)
@@ -35,7 +36,14 @@ _G.main = function(args)
   ex("cd tle; ./standalone.sh; cp tle ../out/bin/tle.lua")
   ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
   log("err", "ULOS assembled")
-  if args[1] == "ocvm" then
+  if args.release then
+    if os.getenv("TERM") == "cynosure" then
+      ex("mtar --output=release.cpio (find out/)")
+    else
+      ex("find out -type f | utils/mtar.lua > release.mtar")
+    end
+  end
+  if args[1].ocvm then
     os.execute("ocvm ..")
   end
 end
