@@ -182,7 +182,7 @@ function _handle:read(n)
   if self.fptr >= self.node.length then return nil end
   n = math.min(self.fptr + n, self.node.length)
   local data = read(n - self.fptr, self.fptr + self.node.offset, true)
-  self.fptr = n-- + 1
+  self.fptr = n
   return data
 end
 
