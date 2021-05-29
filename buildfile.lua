@@ -4,7 +4,7 @@ local OS = "ULOS"
 local REL = os.date("%y.%m").."-r0"
 
 local seq = {
-  {name = "cynosure", flags = ""},
+  {name = "cynosure", flags = "-Iextra/mtarfs"},
   {name = "refinement", flags = ""}
 }
 
