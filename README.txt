@@ -6,7 +6,7 @@ Structured similarly to Apotheosis, but hopefully with a slightly better archite
 
 // REQUIREMENTS
 
-To build ULOS, you'll need a working install of Lua 5.3, a *nix-like system supporting `io.popen`, `mkdir`, and `cd`, as well as `cmd1; cmd2` in the shell.  You'll also need MoonPlus, as the buildfiles are written in MoonPlus.
+To build ULOS, you'll need a working install of Lua 5.3, a *nix-like system supporting `io.popen`, `mkdir`, and `cd`, as well as `cmd1; cmd2` in the shell (when in doubt, the Bourne shell will more than suffice).  You'll also need LuaFileSystem.
 
 Make sure to clone with `--recursive`, since the repository has submodules.
 
