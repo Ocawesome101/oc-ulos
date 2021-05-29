@@ -4,6 +4,7 @@
 switch () {
   cd $1
   git switch "$2"
+  git checkout "$2"
   cd ..
 }
 
