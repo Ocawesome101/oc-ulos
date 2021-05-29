@@ -15,11 +15,11 @@ local seq = {"|","/","-","\\"}
 local si = 1
 
 gpu.set(1, 1, "seeking to data section...")
-local startoffset = 5106
+local startoffset = 5366
 -- seek in a hardcoded amount for speed reasons
 fs.read(handle, 2048)
 fs.read(handle, 2048)
-fs.read(handle, 1010)
+fs.read(handle, 1270)
 local last_time = computer.uptime()
 repeat
   local c = fs.read(handle, 1)
