@@ -12,4 +12,8 @@ commit refinement
 commit external
 
 git add .
-git commit -m 'updates'
+if [ "$#" > 0 ] ; then
+  git commit "$@"
+else
+  git commit -m 'updates'
+fi
