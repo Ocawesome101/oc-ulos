@@ -14,27 +14,39 @@ local handle = assert(fs.open("/init.lua", "r"))
 local seq = {"|","/","-","\\"}
 local si = 1
 
-gpu.set(1, 1, "seeking to data section...")
-local startoffset = 5366
+gpu.setResolution(50, 16)
+gpu.fill(1, 1, 50, 16, " ")
+gpu.setForeground(0)
+gpu.setBackground(0xFFFFFF)
+gpu.set(1, 1, "             Cynosure MTAR-FS Loader              ")
+gpu.setBackground(0)
+gpu.setForeground(0xFFFFFF)
+
+local function status(x, y, t, c)
+  if c then gpu.fill(1, y+1, 50, 1, " ") end
+  gpu.set(x, y+1, t)
+end
+
+status(1, 1, "Seeking to data section...")
+local startoffset = 5536
 -- seek in a hardcoded amount for speed reasons
 fs.read(handle, 2048)
 fs.read(handle, 2048)
-fs.read(handle, 1270)
+fs.read(handle, 1440)
 local last_time = computer.uptime()
 repeat
   local c = fs.read(handle, 1)
   startoffset = startoffset + 1
   local t = computer.uptime()
   if t - last_time >= 0.1 then
-    gpu.set(30, 1, tostring(startoffset))
-    gpu.set(28, 1, seq[si])
+    --status(30, 1, tostring(startoffset))
+    status(28, 1, seq[si])
     si = si + 1
     if not seq[si] then si = 1 end
     last_time = t
   end
 until c == "\90" -- uppercase z: magic
 assert(fs.read(handle, 1) == "\n") -- skip \n
-gpu.fill(1,1,50,1," ")
 
 local function split_path(path)
   local s = {}
@@ -85,19 +97,14 @@ local function read_header()
   if not flendat then return end
   local flen = string.unpack(">I8", flendat)
   local offset = fs.seek(handle, "cur", 0)
-  gpu.fill(1, 2, 50, 1, " ")
-  gpu.set(1, 2, "filename = " .. name)
+  status(24, 2, name .. (" "):rep(50 - (24 + #name)))
   read(flen)
   add_to_tree(name, offset, flen)
   return true
 end
 
-gpu.set(1, 1, "reading file headers... ")
-local i = 0
-repeat
-  gpu.set(24, 1, tostring(i))
-  i = i + 1
-until not read_header()
+status(1, 2, "Reading file headers... ")
+repeat until not read_header()
 
 -- create the mtar fs node --
 
