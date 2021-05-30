@@ -1,2 +1,17 @@
 ULOS 21.05-pre1:
-  *  Initial release.  Supports managed filesystems and has a relatively straightforward installation process.
+  *  First pre-release.
+  *  Supports booting from managed filesystems.
+  *  Has a relatively straightforward installation process.
+  *  All core functionality should be mostly stable.
+
+ULOS 21.05-pre2:
+  *  Second pre-release.  
+  *  Better-optimized MTAR loader.
+
+ULOS 21.05-pre3:
+  *  Third pre-release.
+  *  Optimized the MTAR loader slightly further.
+  *  Fixed a typo in 'login'.
+  *  'passwd' can now remove users.
+  *  New coreutil: 'less' pager.
+  *  New coreutil: 'tfmt' text formatter.
