@@ -1,7 +1,7 @@
 -- buildfile
 
 local OS = "ULOS"
-local REL = os.date("%y.%m").."-pre1"
+local REL = os.date("%y.%m").."-pre2"
 
 local seq = {
   {name = "cynosure", flags = ""},
@@ -11,7 +11,8 @@ local seq = {
 local extern = {
   "coresvc",
   "corelibs",
-  "coreutils"
+  "coreutils",
+  "manpages"
 }
 
 local build = function(dir)
