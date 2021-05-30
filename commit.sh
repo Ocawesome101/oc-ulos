@@ -12,7 +12,7 @@ commit refinement
 commit external
 
 git add .
-if [ "$#" > 0 ] ; then
+if [ "$#" -lt 0 ] ; then
   git commit "$@"
 else
   git commit -m 'updates'
