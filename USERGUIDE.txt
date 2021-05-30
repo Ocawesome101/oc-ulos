@@ -1,0 +1,117 @@
+//// ULOS User Guide ////
+
+This is the official user guide for the Unix-Like Operating System (ULOS).  Any errors should be reported on the issues page of this repository.
+
+/// Contents
+
+Conventions
+System Requirements
+Installation
+  - Prerequisites
+  - Step 1
+  - Step 2
+  - Step 3
+Troubleshooting
+  - Installation
+
+/// Conventions
+
+All examples are shown indented by four spaces.  Words or phrases encased in single-quotes (') should be entered without the quotes.
+
+/// System Requirements
+
+ULOS requires at least 384 kilobytes of memory for the live image, or at least 256 kilobytes if running from an installed medium.  An internet card is necessary to download the installation files.
+
+/// Installation
+
+This section of the Guide will instruct you in installing ULOS.
+
+// Prerequisites
+
+Ensure that your computer meets the system requirements listed above.  Ensure that you have booted from a medium containing OpenOS, and that there is at least one writable drive in your computer other than this one.
+
+// Step 1: Download the live image
+
+Type 'mount' into the OpenOS shell and press the [enter] key on your keyboard.  You should see a list on-screen that looks like something like this:
+
+    a7541fb5 on /tmp     (rw) "tmpfs"
+    c7223813 on /mnt/c72 (rw) "c7223813-1686-48ae-89e4-b86150cc0771"
+    e48f3373 on /        (rw) "OpenOS"
+    e48f3373 on /mnt/e48 (rw) "OpenOS"
+    f5501a9b on /dev     (rw) "devfs"
+
+Locate the entry whose address matches that of your writable installation disk.  In this case, the matching entry is 'c7223813 on /mnt/c72 (rw) "c7223813-1686-48ae-89e4-b86150cc0771"'.  Note the path at which is mounted, '/mnt/c72'.
+
+In the OpenOS shell, type 'wget https://raw.githubusercontent.com/ocawesome101/oc-ulos/master/release.lua PATH/init.lua', replacing PATH with the path from the last instruction.  If the download is successful, you should see the word 'Downloading...' appear on screen, then after awhile 'success.  Saved data to PATH/init.lua'.
+
+
+// Step 2. Boot the live image
+
+Now, shut down your computer.  Remove the medium on which OpenOS is installed, and turn on the computer.  You should be greeted with a screen bearing the words "Cynosure MTAR-FS Loader" across the top, and some status messages below that, as shown:
+
+    █████████████Cynosure MTAR-FS Loader██████████████
+    Seeking to data section.... -
+    Reading file headers...bin/ls.lua
+
+
+This screen is effectively a progress bar displayed by the live image's boot loader.  It will take some time to complete.  Once it has finished, the loader will load and execute the kernel.
+
+If ULOS boots successfully, you will see a login prompt similar to that shown below.
+
+    Welcome to ULOS.
+
+    login: █
+
+Log in with the username 'root' and the password 'root'.  There will be no visual indication during password entry.  You should now see the following:
+
+    login: root
+    password:
+
+    <root@localhost: root> █
+
+You have reached ULOS's read-only live environment.  Experiment as much as you wish.
+
+/ Step 3. Install ULOS
+
+Ensure you have a blank disk drive (whether it is a hard disk or a floppy disk does not matter) in your computer, excluding the installation drive[1].  In the shell, execute 'install'.  You should see something similar to the following.  If you wish to cancel the installation process, hold down the Control key on your keyboard and, as you do so, press D.  Release both keys at once.
+
+    Available filesystems:
+    1. c7223813-1686-4a8e-89e4-b86150cc0771
+    2. 201496e4-e4ff-4e2c-8015-a114a523c53c
+    Please input your selection.
+    > █
+
+The installer will continue to prompt you with '>' until you have entered a valid numerical choice.
+
+    > cabbage
+    > 4
+    > 15
+    > FORTY-TWO!!!!
+    > 2
+
+Once you have entered a valid choice, the installer will begin copying system files to your installation medium.  This will take some time.  Once it has finished, the installer will silently exit.
+
+You may continue to experiment with the live environment, or restart your computer and boot from the writable freshly-installed medium.
+
+Congratulations!  You have successfully installed the Unix-Like Operating System on your computer.
+
+/// Troubleshooting
+
+// Installation
+
+If step 1 fails with "command not found" or similar:  Carefully check your spelling.
+
+If step 1 fails with "unknown host: Name or service not known" or similar:  Ensure that the URL you have entered is correct.
+
+If step 1 fails with "This program requires an internet card to run":  Ensure that you have an internet card installed in your computer.
+
+If step 2 fails with "Not enough memory" or similar: Ensure you have at least 384 KB of memory in your computer.
+
+If step 2 fails with "No bootable medium found" or similar:  Ensure that the file on your installation disk is named 'init.lua'.
+
+If step 2 fails with a kernel panic, and it is not one of the above errors, please file a bug report on the ULOS GitHub Issues page.
+
+
+/// Footnotes
+
+1.  ULOS may be able to install over its live image on the same medium, but this is untested and liable to fail.

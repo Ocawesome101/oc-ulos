@@ -1,0 +1,2 @@
+ULOS 21.05-pre1:
+  *  Initial release.  Supports managed filesystems and has a relatively straightforward installation process.

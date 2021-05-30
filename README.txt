@@ -4,13 +4,19 @@ A Unix-Like OS for OpenComputers.  I need to stop writing these.
 
 Structured similarly to Apotheosis, but hopefully with a slightly better architecture.
 
-// REQUIREMENTS
+// USER GUIDE
+
+See `USERGUIDE.txt`.
+
+// BUILDING
 
 To build ULOS, you'll need a working install of Lua 5.3, a *nix-like system supporting `io.popen`, `mkdir`, and `cd`, as well as `cmd1; cmd2` in the shell (when in doubt, the Bourne shell will more than suffice).  You'll also need LuaFileSystem.
 
 Make sure to clone with `--recursive`, since the repository has submodules.
 
 To build, just run `./build` from the repository root.  Output will be placed in `out`.
+
+To develop ULOS, clone the repository, then run `./setup.sh` from the repository root.
 
 // PRIMARY FEATURES
 
