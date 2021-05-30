@@ -11,6 +11,10 @@ Installation
   - Step 1
   - Step 2
   - Step 3
+General Use
+  - The Lisp-ish Shell
+  - Commands
+  - Filesystem Hierarchy
 Troubleshooting
   - Installation
 
@@ -21,6 +25,8 @@ All examples are shown indented by four spaces.  Words or phrases encased in sin
 /// System Requirements
 
 ULOS requires at least 384 kilobytes of memory for the live image, or at least 256 kilobytes if running from an installed medium.  An internet card is necessary to download the installation files.
+
+The installed system consumes around 300KB of disk space.
 
 /// Installation
 
@@ -94,6 +100,114 @@ Once you have entered a valid choice, the installer will begin copying system fi
 You may continue to experiment with the live environment, or restart your computer and boot from the writable freshly-installed medium.
 
 Congratulations!  You have successfully installed the Unix-Like Operating System on your computer.
+
+/// General Use
+
+// The Lisp-ish Shell
+
+The default shell for all users in ULOS is the Lisp-ish Shell.  Its syntax mirrors a Lisp much more closely than the Bourne shell.
+
+Perhaps the most important syntactical difference is the method of grabbing the output from a program;  where in the Bourne shell one would write
+
+    a $(b -cd) e f
+
+the Lisp-ish Shell syntax is
+
+    a (b -cd) e f
+
+to grab the program's output, or
+
+    a [b -cd] e f
+
+to grab the program's exit status.  In any case, the result will be inserted as arguments (if capturing the program's output, then it will be split on every new-line character) to the parent program.
+
+Building on this syntax, rather than have a separate syntax for getting and setting environment variables, the Lisp-ish shell has two builtins, 'get' and 'set'.  Where the equivalent Bourne expression would be
+
+    echo $TERM
+    set EXAMPLE=abc
+    FOUR=$EXAMPLE
+
+the Lisp-ish Shell syntax is
+
+    echo (get TERM)
+    set EXAMPLE abc
+    set FOUR (get example)
+
+When executed with no arguments, the 'get' builtin will print all currently set environment variables and their values in a manner similar to the Bourne shell's 'set'.
+
+The Lisp-ish Shell eliminates the need for the Bourne shell's third syntax type: prompt shorthand substitution.  Where PS1 in the Bourne shell would be
+
+    PS1='<\u@\h: \W> '
+
+the Lisp-ish Shell equivalent is
+
+    set PS1 '<(get USER)@(or (get HOSTNAME) localhost): (or (match (get PWD) \"([^/]+)/?$\") /)>'
+
+This is more complex on the surface, and certainly less concise, but the premise is really very simple:  for every value within a set of parentheses '()', the shell is to substitute the result of the evaluated expression instead.  Thus, where the Bourne shell's output is
+
+    <root@localhost: root>
+
+the Lisp-ish Shell's output is exactly the same.
+
+    <root@localhost: root>
+
+The Lisp-ish Shell names its built-ins differently, and furthermore contains a different set of builtins, than the Bourne shell.  The Lisp-ish Shell's built-ins, and a short description of each:
+
+    or A B      Print whichever argument evaluates to a truthy value, or nothing
+    get K       Print the value of environment variable K
+    set K V     Set environment variable K to value V
+    match S P   Equivalent to the Lua expression 'string.match(S, P)'
+    gsub S P R  Equivalent to the Lua expression 'string.gsub(S, P, R)'
+    sub S A B   Print substring [A..B] of S
+    cd D        Identical to the Bourne shell builtin of the same name
+    time P ...  Print how long a program took
+    + A B       Add A and B, and print the result
+    - A B       Subtract B from A, and print the result
+    / A B       Divide A/B, and print the result
+    * A B       Multiply A by B, and print the result
+    = A B       If A == B, exit status 0;  else, exit status 1
+    into F ...  Concatenate arguments with newlines, and dump the result into F
+    seq A B     Print all numbers from A to B
+
+// Commands
+
+A list of currently available commands may be obtained by running 'ls /bin'.
+
+The included default editor is TLE (https://github.com/ocawesome101/tle).
+
+Certain ULOS coreutils have different enough functionality from their Linux or UNIX counterparts to be worth mentioning here:
+
+The 'passwd' command combines 'usermod', 'useradd', and 'userdel' into one command.  It can also display user information and, of course, change the password of any user whom the current user has permission to modify.
+
+There is no 'umount' command;  use 'mount -u' instead.
+
+The 'sudo' command by default sudos to root;  this can be changed by setting the first parameter to 'uid=UID', where 'UID' is the desired UID.  This is not how the Linux version of 'sudo' operates.
+
+All commands will accept the '--help' option and, when invoked with it, will display some informational text about the command to the standard error.
+
+// Filesystem Hierarchy
+
+The ULOS filesystem hierarchy is as follows:
+
+    /bin/                 Executable programs
+    /sbin/                Programs necessary to boot;  also 'sudo', 'shutdown'.
+    /lib/                 Libraries.
+    /usr/                 Certain user documents.  Primarily for compatibility.
+      |- share/           Shared files (for example, TLE highlighting data).
+      |- lib/             Certain user libraries.
+      |- bin/             Certain user binaries.
+    /etc/                 System-wide configuration.
+      |- rf/              Scripts and services for Refinement.
+      |- rf.cfg           Refinement init's master configuration file.
+    /sys/                 The Cynosure sysfs.
+      |- mounts           File containing filesystem mount information.
+      |- dev              Device files (the devfs).  For example, TTY streams.
+      |- components       Component data.
+      |   |- /by-address/ Component data by address.
+      |   |- /by-type/    Component data by type.
+      |- proc/            The Cynosure procfs.  Only for process information.
+
+
 
 /// Troubleshooting
 
