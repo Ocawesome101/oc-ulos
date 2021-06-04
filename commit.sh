@@ -10,6 +10,7 @@ commit () {
 commit cynosure
 commit refinement
 commit external
+commit tle
 
 git add .
 if [ "$#" -lt 0 ] ; then
