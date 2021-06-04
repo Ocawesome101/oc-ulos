@@ -15,3 +15,9 @@ ULOS 21.05-pre3:
   *  'passwd' can now remove users.
   *  New coreutil: 'less' pager.
   *  New coreutil: 'tfmt' text formatter.
+
+ULOS 21.06-pre4:
+  *  Fourth pre-release.
+  *  There are now manual pages for all core utilities and libraries.
+  *  A long-standing TTY bug has been fixed - long lines ending at the edge of the screen should now wrap properly.
+  *  There is now a 'text.wrap' function, which wraps text and ignores (but preserves) VT100 escape sequences while doing so.
