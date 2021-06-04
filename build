@@ -11,7 +11,7 @@ checkstr = function(n, str) -- 8
 end -- 8
 env.ex = function(...) -- 13
 	local cmd = table.concat(table.pack(...), " ") -- 14
-	local stdout, err = io.popen(cmd, "r") -- 15
+	--[[local stdout, err = io.popen(cmd, "r") -- 15
 	if not stdout then -- 16
 		return nil, err -- 16
 	end -- 16
@@ -22,7 +22,8 @@ env.ex = function(...) -- 13
 	if stdout ~= nil then -- 18
 		stdout:close() -- 18
 	end -- 18
-	return data or "" -- 19
+	return data or "" -- 19]]
+  return os.execute(cmd)
 end -- 13
 env.ls = function(file) -- 21
 	if file == nil then -- 21

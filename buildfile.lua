@@ -16,8 +16,8 @@ local extern = {
 
 local build = function(dir)
   log("err", "building sub-project ", dir.name)
-  io.write(assert(ex("cd", dir.name, "; OS='"..OS.." "..REL.."'",
-    dir.flags, "../build")))
+  ex("cd", dir.name, "; OS='"..OS.." "..REL.."'",
+    dir.flags, "../build; cd ..")
 end
 
 _G.main = function(args)
@@ -40,7 +40,7 @@ Available \27[93mOPTIONS\27[39m:\
     build(dir)
   end
   ex("rm -rv out")
-  ex("mkdir -p out/sbin")
+  ex("mkdir -p out out/sbin")
   ex("cp cynosure/kernel.lua out/init.lua")
   ex("cp refinement/refinement.lua out/sbin/init.lua")
   if not args.nomanual then
@@ -48,9 +48,16 @@ Available \27[93mOPTIONS\27[39m:\
   end
 
   for _, file in ipairs(extern) do
-    ex("cp -rv", "external/"..file.."/*", "out/")
+    if os.getenv("TERM") == "cynosure" then
+      local p = "external/" .. file .. "/"
+      for f in require("lfs").dir(p) do
+        ex("cp -rv", p .. f, "out/" .. f)
+      end
+    else
+      ex("cp -rv", "external/"..file.."/*", "out/")
+    end
   end
-  ex("cd tle; ./standalone.lua; cp tle ../out/bin/tle.lua")
+  ex("cd tle; ./standalone.lua; cp tle ../out/bin/tle.lua; cd ..")
   ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
   log("err", "ULOS assembled")
   if args.release then
