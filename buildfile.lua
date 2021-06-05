@@ -59,6 +59,8 @@ Available \27[93mOPTIONS\27[39m:\
   end
   ex("cd tle; ./standalone.lua; cp tle ../out/bin/tle.lua; cd ..")
   ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
+  ex("mkdir out/root")
+  ex("cp external/motd.txt out/etc/")
   log("err", "ULOS assembled")
   if args.release then
     log("err, Creating MTAR archive")
