@@ -21,3 +21,11 @@ ULOS 21.06-pre4:
   *  There are now manual pages for all core utilities and libraries.
   *  A long-standing TTY bug has been fixed - long lines ending at the edge of the screen should now wrap properly.
   *  There is now a 'text.wrap' function, which wraps text and ignores (but preserves) VT100 escape sequences while doing so.
+
+ULOS 21.06-pre5:
+  *  Fifth pre-release.
+  *  The Cynosure kernel now features opt-out pre-emptive multitasking, through hijacking load().
+  *  There is now a MOTD in /etc/motd.txt, which /bin/login will display on logging in.
+  *  LSH supports semicolon-separated commands, though the implementation leaves much to be desired.
+  *  Added a mostly-complete LuaFileSystem compatibility layer.
+  *  LSH's `into' builtin now supports executing programs directly, if passed the '-p' option.
