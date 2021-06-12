@@ -1,3 +1,0 @@
-//// UPM: the ULOS Package Manager ////
-
-UPM is a flexible package manager for ULOS.  It supports configurable download sources.
