@@ -29,3 +29,8 @@ ULOS 21.06-pre5:
   *  LSH supports semicolon-separated commands, though the implementation leaves much to be desired.
   *  Added a mostly-complete LuaFileSystem compatibility layer.
   *  LSH's `into' builtin now supports executing programs directly, if passed the '-p' option.
+
+ULOS 21.06-pre6:
+  *  Sixth pre-release.
+  *  Cynosure's pre-emptive multitasking has been significantly improved.
+  *  Fixed a typo in the 'futil' library's manual page.
