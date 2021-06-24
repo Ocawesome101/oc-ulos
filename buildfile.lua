@@ -1,7 +1,7 @@
 -- buildfile
 
 local OS = "ULOS"
-local REL = os.date("%y.%m").."-pre6"
+local REL = os.date("%y.%m").."-1.0"
 
 local seq = {
   {name = "cynosure", flags = "KMODS=extra/net/base"},
