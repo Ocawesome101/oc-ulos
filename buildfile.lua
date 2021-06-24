@@ -4,7 +4,7 @@ local OS = "ULOS"
 local REL = os.date("%y.%m").."-pre6"
 
 local seq = {
-  {name = "cynosure", flags = ""},
+  {name = "cynosure", flags = "KMODS=extra/net/base"},
   {name = "refinement", flags = ""}
 }
 
@@ -29,6 +29,7 @@ Assembles ULOS.  \27[93mOPTIONS\27[39m should not be prefixed with a \27[91m--\2
 \
 Available \27[93mOPTIONS\27[39m:\
   \27[33mnomanual\27[39m:   do not include manual pages in the build.  reduces output size by about 100KB.\
+  \27[33mupm\27[39m:        include UPM in the build.  highly experimental.\
   \27[33mrelease\27[39m:    create a bootable MTAR archive (release image)\
   \27[33mhelp\27[39m:       display this help.\
   \27[33mocvm\27[39m:       automatically execute 'ocvm ..' when the build is complete.  used for my personal development setup.\
@@ -45,6 +46,9 @@ Available \27[93mOPTIONS\27[39m:\
   ex("cp refinement/refinement.lua out/sbin/init.lua")
   if not args.nomanual then
     extern[#extern+1] = "manpages"
+  end
+  if args.upm then
+    extern[#extern+1] = "upm"
   end
 
   for _, file in ipairs(extern) do

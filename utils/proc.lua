@@ -21,7 +21,6 @@ proc = function(f)
     end
     handle:write(line .. "\n")
   end
-  return ret
 end
 
 local args = {...}
@@ -38,7 +37,7 @@ end
 
 handle = assert(io.open(args[2], "w"))
 
-handle:write(proc(args[1]))
+proc(args[1])
 
 handle:close()
 
