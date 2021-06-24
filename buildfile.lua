@@ -29,8 +29,9 @@ Assembles ULOS.  \27[93mOPTIONS\27[39m should not be prefixed with a \27[91m--\2
 \
 Available \27[93mOPTIONS\27[39m:\
   \27[33mnomanual\27[39m:   do not include manual pages in the build.  reduces output size by about 100KB.\
-  \27[33mupm\27[39m:        include UPM in the build.  highly experimental.\
+  \27[33mnoupm\27[39m:      do not include UPM in the build.  highly experimental.\
   \27[33mrelease\27[39m:    create a bootable MTAR archive (release image)\
+  \27[33mpkg\27[39m:        create the various MTAR packages used for installation with UPM\
   \27[33mhelp\27[39m:       display this help.\
   \27[33mocvm\27[39m:       automatically execute 'ocvm ..' when the build is complete.  used for my personal development setup.\
 ")
@@ -47,7 +48,7 @@ Available \27[93mOPTIONS\27[39m:\
   if not args.nomanual then
     extern[#extern+1] = "manpages"
   end
-  if args.upm then
+  if not args.noupm then
     extern[#extern+1] = "upm"
   end
 
@@ -67,7 +68,7 @@ Available \27[93mOPTIONS\27[39m:\
   ex("cp external/motd.txt out/etc/")
   log("err", "ULOS assembled")
   if args.release then
-    log("err, Creating MTAR archive")
+    log("err", "Creating MTAR archive")
     if os.getenv("TERM") == "cynosure" then
       ex("mtar --output=release.mtar (find out/)")
       ex("into -p release.lua cat cynosure/mtarldr.lua cynosure/mtarldr_2.lua release.mtar")
@@ -76,6 +77,26 @@ Available \27[93mOPTIONS\27[39m:\
       ex("cat cynosure/mtarldr.lua release.mtar cynosure/mtarldr_2.lua > release.lua")
     end
     os.remove("release.mtar")
+  end
+  if args.pkg then
+    log("err", "Creating MTAR packages")
+    ex("mkdir pkg")
+    -- kernel
+    ex("echo out/init.lua | utils/mtar.lua > pkg/cynosure.mtar")
+    -- init
+    ex("echo out/sbin/init.lua | utils/mtar.lua > pkg/refinement.mtar")
+    -- coreutils
+    ex("find external/coreutils -type f | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
+    -- corelibs
+    ex("find external/corelibs -type f | sed 's/external\\/corelibs/out/g' | utils/mtar.lua > pkg/corelibs.mtar")
+    -- coresvc
+    ex("find external/coresvc -type f | sed 's/external\\/coresvc/out/g' | utils/mtar.lua > pkg/coresvc.mtar")
+    -- tle
+    ex("echo out/bin/tle.lua | utils/mtar.lua > pkg/tle.mtar")
+    -- man pages
+    ex("find external/manpages -type f | sed 's/external\\/manpages/out/g' | utils/mtar.lua > pkg/manpages.mtar")
+    -- upm
+    ex("find external/upm -type f | sed 's/external\\/upm/out/g' | utils/mtar.lua > pkg/upm.mtar")
   end
   if args.ocvm then
     os.execute("ocvm ..")
