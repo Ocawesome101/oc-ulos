@@ -38,6 +38,9 @@ ULOS 21.06-pre6:
 ULOS 21.06-1.0:
   *  First release.
   *  The ULOS Package Manager is implemented and working.
+  *  Cynosure now has networking support.  Currently, this is only implemented for the internet card, but support for other forms of networking can and will be transparently added in the future.
+  *  Cynosure's buffer implementation now behaves as expected when reading 0 bytes from a file.
+  *  Fixed a small bug with Cynosure's pre-emptive multitasking implementation.
   *  install:  There is now an option to use UPM for installation, rather than copying from the live media.  Only available if an internet card is installed.
   *  mtar:  The MiniTel ARchive library now properly unarchives files, and the behavior of the unarchiver function has as a result changed slightly.  (Unarchiver code credit: Izaya)
-  *  
+  *  There are several new manual pages (man, tfmt, upm, and UPM's included libraries config and serializer).

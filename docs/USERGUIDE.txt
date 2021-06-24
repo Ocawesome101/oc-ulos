@@ -15,6 +15,7 @@ General Use
   - The Lisp-ish Shell
   - Commands
   - Filesystem Hierarchy
+  - Package Management
 Troubleshooting
   - Installation
 
@@ -95,7 +96,15 @@ The installer will continue to prompt you with '>' until you have entered a vali
     > FORTY-TWO!!!!
     > 2
 
-Once you have entered a valid choice, the installer will begin copying system files to your installation medium.  This will take some time.  Once it has finished, the installer will silently exit.
+If an internet card is installed, the installer will prompt you for whether to download ULOS from the internet using UPM.  This is generally a good idea as it will be slightly more up-to-date.
+
+    Perform an online installation? [Y/n]: █
+
+If you select 'y', the installer will ask whether to include manual pages and TLE in the installed package.  This is generally a good idea.
+
+    Install the full system (manual pages, TLE)?  [Y/n]: █
+
+Once this process has been completed, the installer will install ULOS to the selected medium.  This will take some time.  Once the installer has finished, it will silently exit.
 
 You may continue to experiment with the live environment, or restart your computer and boot from the writable freshly-installed medium.
 
@@ -189,24 +198,35 @@ All commands will accept the '--help' option and, when invoked with it, will dis
 
 The ULOS filesystem hierarchy is as follows:
 
-    /bin/                 Executable programs
+    /bin/                 Executable programs.
     /sbin/                Programs necessary to boot;  also 'sudo', 'shutdown'.
     /lib/                 Libraries.
     /usr/                 Certain user documents.  Primarily for compatibility.
       |- share/           Shared files (for example, TLE highlighting data).
       |- lib/             Certain user libraries.
       |- bin/             Certain user binaries.
+      |- man/             Manual pages.
     /etc/                 System-wide configuration.
       |- rf/              Scripts and services for Refinement.
       |- rf.cfg           Refinement init's master configuration file.
+      |- upm/             Data for the ULOS Package Manaager
+      |- upm.cfg          UPM's configuration file.
     /sys/                 The Cynosure sysfs.
       |- mounts           File containing filesystem mount information.
-      |- dev              Device files (the devfs).  For example, TTY streams.
-      |- components       Component data.
-      |   |- /by-address/ Component data by address.
-      |   |- /by-type/    Component data by type.
+      |- dev/             Device files (the devfs).  For example, TTY streams.
+      |- components/      Component data.
+      |   |- by-address/  Component data by address.
+      |   |- by-type/     Component data by type.
       |- proc/            The Cynosure procfs.  Only for process information.
 
+// Package Management
+  Packages may be installed and removed with the ULOS Package Manager (UPM).
+
+  UPM's usage is generally similar to Debian's Advanced Packaging Tool (APT), with 'install', 'remove', 'search', and 'update' all being recognized command verbs.
+
+  A fairly detailed help text will be printed if UPM is invoked with the '--help' command line option, or the 'help' command verb.
+
+  See the UPM manual page for more details.
 
 
 /// Troubleshooting
