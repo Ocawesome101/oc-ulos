@@ -86,7 +86,7 @@ Available \27[93mOPTIONS\27[39m:\
     -- init
     ex("echo out/sbin/init.lua | utils/mtar.lua > pkg/refinement.mtar")
     -- coreutils
-    ex("find external/coreutils -type f | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
+    ex("find external/coreutils -type f | grep -v install | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
     -- corelibs
     ex("find external/corelibs -type f | sed 's/external\\/corelibs/out/g' | utils/mtar.lua > pkg/corelibs.mtar")
     -- coresvc
