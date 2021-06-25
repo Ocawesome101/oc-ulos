@@ -44,3 +44,10 @@ ULOS 21.06-1.0:
   *  install:  There is now an option to use UPM for installation, rather than copying from the live media.  Only available if an internet card is installed.
   *  mtar:  The MiniTel ARchive library now properly unarchives files, and the behavior of the unarchiver function has as a result changed slightly.  (Unarchiver code credit: Izaya)
   *  There are several new manual pages (man, tfmt, upm, and UPM's included libraries config and serializer).
+
+ULOS 21.06-1.1:
+  *  Release 1.1.
+  *  There is now a readline() library for improved line editing, and an accompanying manual page.
+  *  The shell and the Lua REPL now both use the new readline() library.
+  *  There have been numerous fixes and additions to UPM (namely: upgrade, list, and an installation status indicator in the output of search).
+  *  Fixed a very small bug with the Cynosure VT100 emulator wherein cursor wrapping did not work properly in one very specific case.

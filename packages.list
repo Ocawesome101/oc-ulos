@@ -1,6 +1,6 @@
 {packages={
  cynosure={
-  version=1,
+  version=1.01,
   mtar="/pkg/cynosure.mtar",
   author="Ocawesome101",
   description="The Cynosure kernel"},
@@ -10,12 +10,12 @@
   author="Ocawesome101",
   description="The Refinement init system"},
  coreutils={
-  version=1,
+  version=1.1,
   mtar="/pkg/coreutils.mtar",
   author="Ocawesome101",
   description="The ULOS core utilities"},
  corelibs={
-  version=1,
+  version=1.1,
   mtar="/pkg/corelibs.mtar",
   author="Ocawesome101",
   description="The ULOS core libraries"},
@@ -30,7 +30,7 @@
   author="Ocawesome101",
   description="A highly optimized text editor with syntax highlighting support"},
  manpages={
-  version=1,
+  version=1.1,
   mtar="/pkg/manpages.mtar",
   author="Ocawesome101",
   description="Documentation for core ULOS packages"},
