@@ -49,5 +49,12 @@ ULOS 21.06-1.1:
   *  Release 1.1.
   *  There is now a readline() library for improved line editing, and an accompanying manual page.
   *  The shell and the Lua REPL now both use the new readline() library.
-  *  There have been numerous fixes and additions to UPM (namely: upgrade, list, and an installation status indicator in the output of search).
+  *  There have been numerous fixes and additions to UPM:
+    >  The `search` command now indicates whether the specified package is installed.
+    >  There is now a `list` command, which lists all installed packages in no particular order.
+    >  There is now an `upgrade` command, which upgrades all out-of-date packages on the system.
   *  Fixed a very small bug with the Cynosure VT100 emulator wherein cursor wrapping did not work properly in one very specific case.
+  *  Added the `sv` command for service management, and a corresponding manual page.
+  *  Merged the `coresvc` and `refinement` packages.
+  *  Refinement now sets `__metatable` on the table returned from `sv.list()`.
+  *  Added the `uname` command, identical to `print(_OSVERSION)`.

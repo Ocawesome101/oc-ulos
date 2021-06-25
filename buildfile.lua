@@ -1,7 +1,7 @@
 -- buildfile
 
 local OS = "ULOS"
-local REL = os.date("%y.%m").."-1.0"
+local REL = os.date("%y.%m").."-1.1"
 
 local seq = {
   {name = "cynosure", flags = "KMODS=extra/net/base"},
@@ -82,20 +82,25 @@ Available \27[93mOPTIONS\27[39m:\
     log("err", "Creating MTAR packages")
     ex("mkdir pkg")
     -- kernel
+    log("ok", "package: cynosure")
     ex("echo out/init.lua | utils/mtar.lua > pkg/cynosure.mtar")
-    -- init
-    ex("echo out/sbin/init.lua | utils/mtar.lua > pkg/refinement.mtar")
+    -- init + services
+    log("ok", "package: refinement")
+    ex("find external/coresvc out/sbin/init.lua -type f | sed 's/external\\/coresvc/out/g' | utils/mtar.lua > pkg/refinement.mtar")
     -- coreutils
+    log("ok", "package: coreutils")
     ex("find external/coreutils -type f | grep -v install | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
     -- corelibs
+    log("ok", "package: corelibs")
     ex("find external/corelibs -type f | sed 's/external\\/corelibs/out/g' | utils/mtar.lua > pkg/corelibs.mtar")
-    -- coresvc
-    ex("find external/coresvc -type f | sed 's/external\\/coresvc/out/g' | utils/mtar.lua > pkg/coresvc.mtar")
     -- tle
+    log("ok", "package: tle")
     ex("echo out/bin/tle.lua | utils/mtar.lua > pkg/tle.mtar")
     -- man pages
+    log("ok", "package: manpages")
     ex("find external/manpages -type f | sed 's/external\\/manpages/out/g' | utils/mtar.lua > pkg/manpages.mtar")
     -- upm
+    log("ok", "package: upm")
     ex("find external/upm -type f | sed 's/external\\/upm/out/g' | utils/mtar.lua > pkg/upm.mtar")
   end
   if args.ocvm then
