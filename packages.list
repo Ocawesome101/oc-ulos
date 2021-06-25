@@ -8,7 +8,7 @@
   version=1.05,
   mtar="/pkg/refinement.mtar",
   author="Ocawesome101",
-  description="The Refinement init system and associated utilities"},
+  description="The Refinement init system and accompanying utilities"},
  coreutils={
   version=1.1,
   mtar="/pkg/coreutils.mtar",
