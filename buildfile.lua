@@ -89,7 +89,7 @@ Available \27[93mOPTIONS\27[39m:\
     ex("find external/coresvc out/sbin/init.lua -type f | sed 's/external\\/coresvc/out/g' | utils/mtar.lua > pkg/refinement.mtar")
     -- coreutils
     log("ok", "package: coreutils")
-    ex("find external/coreutils -type f | grep -v install | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
+    ex("find external/coreutils out/etc/motd.txt -type f | grep -v install | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
     -- corelibs
     log("ok", "package: corelibs")
     ex("find external/corelibs -type f | sed 's/external\\/corelibs/out/g' | utils/mtar.lua > pkg/corelibs.mtar")
