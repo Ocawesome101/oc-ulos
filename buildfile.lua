@@ -37,36 +37,38 @@ Available \27[93mOPTIONS\27[39m:\
 ")
     os.exit(1)
   end
-  log("err", "Assembling ULOS")
-  for _, dir in ipairs(seq) do
-    build(dir)
-  end
-  ex("rm -rv out")
-  ex("mkdir -p out out/sbin")
-  ex("cp cynosure/kernel.lua out/init.lua")
-  ex("cp refinement/refinement.lua out/sbin/init.lua")
-  if not args.nomanual then
-    extern[#extern+1] = "manpages"
-  end
-  if not args.noupm then
-    extern[#extern+1] = "upm"
-  end
-
-  for _, file in ipairs(extern) do
-    if os.getenv("TERM") == "cynosure" then
-      local p = "external/" .. file .. "/"
-      for f in require("lfs").dir(p) do
-        ex("cp -rv", p .. f, "out/" .. f)
-      end
-    else
-      ex("cp -rv", "external/"..file.."/*", "out/")
+  if not args.norebuild then
+    log("err", "Assembling ULOS")
+    for _, dir in ipairs(seq) do
+      build(dir)
     end
+    ex("rm -rv out")
+    ex("mkdir -p out out/sbin")
+    ex("cp cynosure/kernel.lua out/init.lua")
+    ex("cp refinement/refinement.lua out/sbin/init.lua")
+    if not args.nomanual then
+      extern[#extern+1] = "manpages"
+    end
+    if not args.noupm then
+      extern[#extern+1] = "upm"
+    end
+  
+    for _, file in ipairs(extern) do
+      if os.getenv("TERM") == "cynosure" then
+        local p = "external/" .. file .. "/"
+        for f in require("lfs").dir(p) do
+          ex("cp -rv", p .. f, "out/" .. f)
+        end
+      else
+        ex("cp -rv", "external/"..file.."/*", "out/")
+      end
+    end
+    ex("cd tle; ./standalone.lua; cp tle ../out/bin/tle.lua; cd ..")
+    ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
+    ex("mkdir out/root")
+    ex("cp external/motd.txt out/etc/")
+    log("err", "ULOS assembled")
   end
-  ex("cd tle; ./standalone.lua; cp tle ../out/bin/tle.lua; cd ..")
-  ex("mkdir out/usr/share -p; cp -r tle/syntax out/usr/share/VLE")
-  ex("mkdir out/root")
-  ex("cp external/motd.txt out/etc/")
-  log("err", "ULOS assembled")
   if args.release then
     log("err", "Creating MTAR archive")
     if os.getenv("TERM") == "cynosure" then
