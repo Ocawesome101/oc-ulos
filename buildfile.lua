@@ -29,7 +29,8 @@ Assembles ULOS.  \27[93mOPTIONS\27[39m should not be prefixed with a \27[91m--\2
 \
 Available \27[93mOPTIONS\27[39m:\
   \27[33mnomanual\27[39m:   do not include manual pages in the build.  reduces output size by about 100KB.\
-  \27[33mnoupm\27[39m:      do not include UPM in the build.  highly experimental.\
+  \27[33mnoupm\27[39m:      do not include UPM in the build.\
+  \27[33mnorebuild\27[39m:  do not rebuild the system before performing further actions.\
   \27[33mrelease\27[39m:    create a bootable MTAR archive (release image)\
   \27[33mpkg\27[39m:        create the various MTAR packages used for installation with UPM\
   \27[33mhelp\27[39m:       display this help.\
