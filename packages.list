@@ -10,7 +10,7 @@
   author="Ocawesome101",
   description="The Refinement init system and its accompanying utilities"},
  coreutils={
-  version=1.11,
+  version=1.12,
   mtar="/pkg/coreutils.mtar",
   author="Ocawesome101",
   description="The ULOS core utilities"},
@@ -30,7 +30,7 @@
   author="Ocawesome101",
   description="Documentation for core ULOS packages"},
  upm={
-  version=1.1,
+  version=1.13,
   mtar="/pkg/upm.mtar",
   author="Ocawesome101",
   description="The ULOS Package Manager"},
