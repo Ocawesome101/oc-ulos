@@ -95,7 +95,7 @@ Available \27[93mOPTIONS\27[39m:\
     ex("find external/corelibs -type f | sed 's/external\\/corelibs/out/g' | utils/mtar.lua > pkg/corelibs.mtar")
     -- tle
     log("ok", "package: tle")
-    ex("echo out/bin/tle.lua | utils/mtar.lua > pkg/tle.mtar")
+    ex("find out/usr/share out/bin/tle.lua -type f | utils/mtar.lua > pkg/tle.mtar")
     -- man pages
     log("ok", "package: manpages")
     ex("find external/manpages -type f | sed 's/external\\/manpages/out/g' | utils/mtar.lua > pkg/manpages.mtar")
