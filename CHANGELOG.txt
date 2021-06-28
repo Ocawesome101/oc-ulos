@@ -45,7 +45,7 @@ ULOS 21.06-1.0:
   *  mtar:  The MiniTel ARchive library now properly unarchives files, and the behavior of the unarchiver function has as a result changed slightly.  (Unarchiver code credit: Izaya)
   *  There are several new manual pages (man, tfmt, upm, and UPM's included libraries config and serializer).
 
-ULOS 21.06-1.1:
+ULOS 21.06-r1.1:
   *  Release 1.1.
   *  There is now a readline() library for improved line editing, and an accompanying manual page.
   *  The shell and the Lua REPL now both use the new readline() library.
@@ -58,3 +58,17 @@ ULOS 21.06-1.1:
   *  Merged the `coresvc` and `refinement` packages.
   *  Refinement now sets `__metatable` on the table returned from `sv.list()`.
   *  Added the `uname` command, identical to `print(_OSVERSION)`.
+
+ULOS 21.06-r1.2:
+  *  Release 1.2.
+  *  Added category selection ('installed', 'all', and per-repository) to UPM's 'list' command.
+  *  LSH's program exit status filter has been improved slightly;  it will no longer print 'exited' or blank exit statuses.
+  *  UPM now has a copyright notice in its help text.
+  *  UPM now automatically resolves package dependencies.
+  *  UPM's package installation process has been refined:  it will now resolve dependencies, *then* download packages, *then* install them.  Previously it would download and install each package individually.
+  *  A piece of debug code that could cause unexpected behavior has been removed from Cynosure.
+  *  Cynosure's TTY cursor can now be toggled.
+  *  Syntax highlighting is now included in the 'tle' package.
+  *  /etc/motd.txt is now included in the 'coreutils' package.
+  *  The release image now includes an 'installed.list', so that a system installed using the offline method will be upgradeable using UPM.
+  *  A small bug with the readline() library has been fixed.
