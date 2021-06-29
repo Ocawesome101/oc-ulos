@@ -1,6 +1,11 @@
 {packages={
+ cldr={
+  version=1.0,
+  mtar="/pkg/cldr.mtar",
+  author="Ocawesome101",
+  description="Simple configurable boot loader"},
  cynosure={
-  version=1.02,
+  version=1.03,
   mtar="/pkg/cynosure.mtar",
   author="Ocawesome101",
   description="The Cynosure kernel"},

@@ -9,6 +9,7 @@ local seq = {
 }
 
 local extern = {
+  "cldr",
   "coresvc",
   "corelibs",
   "coreutils",
@@ -44,8 +45,8 @@ Available \27[93mOPTIONS\27[39m:\
       build(dir)
     end
     ex("rm -rv out")
-    ex("mkdir -p out out/sbin")
-    ex("cp cynosure/kernel.lua out/init.lua")
+    ex("mkdir -p out out/sbin out/boot")
+    ex("cp cynosure/kernel.lua out/boot/cynosure.lua")
     ex("cp refinement/refinement.lua out/sbin/init.lua")
     if not args.nomanual then
       extern[#extern+1] = "manpages"
@@ -84,9 +85,12 @@ Available \27[93mOPTIONS\27[39m:\
   if args.pkg then
     log("err", "Creating MTAR packages")
     ex("mkdir pkg")
+    -- loader
+    log("ok", "package: cldr")
+    ex("find external/cldr -tyoe f | sed 's/external\\/cldr/out/g' | util/mtar.lua > pkg/cldr.mtar")
     -- kernel
     log("ok", "package: cynosure")
-    ex("echo out/init.lua | utils/mtar.lua > pkg/cynosure.mtar")
+    ex("echo out/boot/cynosure.lua | utils/mtar.lua > pkg/cynosure.mtar")
     -- init + services
     log("ok", "package: refinement")
     ex("find external/coresvc out/sbin/init.lua -type f | sed 's/external\\/coresvc/out/g' | utils/mtar.lua > pkg/refinement.mtar")
