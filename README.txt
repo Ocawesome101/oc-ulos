@@ -28,7 +28,7 @@ Rather than suffer the memory overhead of two separate filesystems, Cynosure com
 
 With the Refinement init system, script and service configuration is simpler than ever - and, thanks to strict separation measures, the init system may be easily swapped.
 
-ULOS runs smoothly on 256K of RAM, something neither Monolith nor Apotheosis can accomplish.  It supports multi-terminal functionality, with terminals initalized at boot time, allowing simultaneous use by several users.
+ULOS runs smoothly on 384K of RAM[3].  It supports multi-terminal functionality, with terminals initalized at boot time, allowing simultaneous use by several users.
 
 ULOS ships with upstream TLE and its syntax highlighting files, for an incredible text editing experience.  This is proof that VT100-based editing doesn't have to be slow or primitive.
 
@@ -36,3 +36,4 @@ ULOS ships with upstream TLE and its syntax highlighting files, for an incredibl
 ////footnotes
 1.  It is extremely difficult to produce a benchmark that accurately mirrors actual use.  Not all features of the various tested OS's VT100 emulators were tested.  Real-world results may vary.
 2.  There is still an API for process management, since there has to be a way to spawn new processes, and for processes to obtain more in-depth information about themselves.  However, programs like ps(1) may be written without the use of such APIs, simplifying program structure.
+3.  ULOS used to run on 256K of RAM, but with time memory usage has grown just enough that this is no longer possible.
