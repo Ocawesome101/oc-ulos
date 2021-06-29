@@ -38,7 +38,7 @@
   description="Documentation for core ULOS packages",
   dependencies={"coreutils","corelibs"},},
  upm={
-  version=1.31,
+  version=1.32,
   mtar="/pkg/upm.mtar",
   author="Ocawesome101",
   description="The ULOS Package Manager",

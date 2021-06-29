@@ -251,7 +251,7 @@ local function install(packages)
   end
 
   log(pfx.info, "resolving dependencies")
-  for i=2, #packages, 1 do
+  for i=1, #packages, 1 do
     resolve(packages[i])
   end
 
