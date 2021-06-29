@@ -87,7 +87,7 @@ Available \27[93mOPTIONS\27[39m:\
     ex("mkdir pkg")
     -- loader
     log("ok", "package: cldr")
-    ex("find external/cldr -tyoe f | sed 's/external\\/cldr/out/g' | util/mtar.lua > pkg/cldr.mtar")
+    ex("find external/cldr -type f | sed 's/external\\/cldr/out/g' | utils/mtar.lua > pkg/cldr.mtar")
     -- kernel
     log("ok", "package: cynosure")
     ex("echo out/boot/cynosure.lua | utils/mtar.lua > pkg/cynosure.mtar")
