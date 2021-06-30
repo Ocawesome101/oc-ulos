@@ -228,6 +228,15 @@ The ULOS filesystem hierarchy is as follows:
 
   See the UPM manual page for more details.
 
+/ Installing packages
+
+    upm install <package ...>
+
+/ Update the system
+  
+    upm update
+    upm upgrade
+
 
 /// Troubleshooting
 
