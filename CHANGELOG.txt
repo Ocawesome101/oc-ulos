@@ -72,3 +72,4 @@ ULOS 21.06-r1.2:
   *  /etc/motd.txt is now included in the 'coreutils' package.
   *  The release image now includes an 'installed.list', so that a system installed using the offline method will be upgradeable using UPM.
   *  A small bug with the readline() library has been fixed.
+  *  Added a basic 'more' pager.
