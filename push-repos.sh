@@ -14,5 +14,5 @@ push external
 push tle
 
 git add .
-git commit -m 'updates'
+git commit -m 'updates' "$@"
 git push
