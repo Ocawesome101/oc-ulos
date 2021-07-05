@@ -1,12 +1,16 @@
 -- buildfile
 
 local OS = "ULOS"
-local REL = os.date("%y.%m").."-1.1"
+local REL = os.date("%y.%m").."-" .. (os.getenv("ULOSREL") or "1.2")
 
 local seq = {
-  {name = "cynosure", flags = "KMODS=extra/net/base"},
+  {name = "cynosure", flags = "KMODS=extra/net/base,extra/getgpu"},
   {name = "refinement", flags = ""}
 }
+
+if os.getenv("KMODS") then
+  seq[1].flags = (os.getenv("KMOV") and "KMODS=" or (seq[1].flags .. ",")) .. os.getenv("KMODS")
+end
 
 local extern = {
   "cldr",
@@ -15,18 +19,30 @@ local extern = {
   "coreutils",
 }
 
+local env = {}
+
 local build = function(dir)
   log("err", "building sub-project ", dir.name)
   ex("cd", dir.name, "; OS='"..OS.." "..REL.."'",
-    dir.flags, "../build; cd ..")
+    dir.flags, table.concat(env, " "), "../build", dir.args or "", "; cd ..")
 end
 
+
 _G.main = function(args)
-  for k,v in pairs(args) do args[v] = true end
+  for k,v in pairs(args) do
+    v = tostring(v)
+    if v:find("=") then
+      env[#env+1] = v
+    else
+      args[v] = true
+    end
+  end
+
   if args.help or args["--help"] then
     io.stderr:write("\
 usage: \27[96mbuild \27[93mOPTIONS\27[39m\
 Assembles ULOS.  \27[93mOPTIONS\27[39m should not be prefixed with a \27[91m--\27[39m.\
+Specify extra kernel modules with \27[97mKMODS\27[39m=\27[93mmod1,mod2,...\27[39m\
 \
 Available \27[93mOPTIONS\27[39m:\
   \27[33mnomanual\27[39m:   do not include manual pages in the build.  reduces output size by about 100KB.\
@@ -39,12 +55,13 @@ Available \27[93mOPTIONS\27[39m:\
 ")
     os.exit(1)
   end
+
   if not args.norebuild then
     log("err", "Assembling ULOS")
     for _, dir in ipairs(seq) do
       build(dir)
     end
-    ex("rm -rv out")
+    ex("rm -r out")
     ex("mkdir -p out out/sbin out/boot")
     ex("cp cynosure/kernel.lua out/boot/cynosure.lua")
     ex("cp refinement/refinement.lua out/sbin/init.lua")
@@ -59,10 +76,10 @@ Available \27[93mOPTIONS\27[39m:\
       if os.getenv("TERM") == "cynosure" then
         local p = "external/" .. file .. "/"
         for f in require("lfs").dir(p) do
-          ex("cp -rv", p .. f, "out/" .. f)
+          ex("cp -r", p .. f, "out/" .. f)
         end
       else
-        ex("cp -rv", "external/"..file.."/*", "out/")
+        ex("cp -r", "external/"..file.."/*", "out/")
       end
     end
     ex("cd tle; ./standalone.lua; cp tle ../out/bin/tle.lua; cd ..")

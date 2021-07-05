@@ -5,7 +5,7 @@
   author="Ocawesome101",
   description="Simple configurable boot loader"},
  cynosure={
-  version=1.03,
+  version=1.05,
   mtar="/pkg/cynosure.mtar",
   author="Ocawesome101",
   description="The Cynosure kernel"},
@@ -15,13 +15,13 @@
   author="Ocawesome101",
   description="The Refinement init system and its accompanying utilities"},
  coreutils={
-  version=1.13,
+  version=1.14,
   mtar="/pkg/coreutils.mtar",
   author="Ocawesome101",
   description="The ULOS core utilities",
   dependencies={"corelibs"},},
  corelibs={
-  version=1.1,
+  version=1.2,
   mtar="/pkg/corelibs.mtar",
   author="Ocawesome101",
   description="The ULOS core libraries",
