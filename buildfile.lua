@@ -49,7 +49,6 @@ Available \27[93mOPTIONS\27[39m:\
   \27[33mnoupm\27[39m:      do not include UPM in the build.\
   \27[33mnorebuild\27[39m:  do not rebuild the system before performing further actions.\
   \27[33mrelease\27[39m:    create a bootable MTAR archive (release image)\
-  \27[33mpkg\27[39m:        create the various MTAR packages used for installation with UPM\
   \27[33mhelp\27[39m:       display this help.\
   \27[33mocvm\27[39m:       automatically execute 'ocvm ..' when the build is complete.  used for my personal development setup.\
 ")
@@ -99,35 +98,7 @@ Available \27[93mOPTIONS\27[39m:\
     end
     os.remove("release.mtar")
   end
-  if args.pkg then
-    log("err", "Creating MTAR packages")
-    ex("mkdir pkg")
-    -- loader
-    log("ok", "package: cldr")
-    ex("find external/cldr -type f | sed 's/external\\/cldr/out/g' | utils/mtar.lua > pkg/cldr.mtar")
-    -- kernel
-    log("ok", "package: cynosure")
-    ex("echo out/boot/cynosure.lua | utils/mtar.lua > pkg/cynosure.mtar")
-    -- init + services
-    log("ok", "package: refinement")
-    ex("find external/coresvc out/sbin/init.lua -type f | sed 's/external\\/coresvc/out/g' | utils/mtar.lua > pkg/refinement.mtar")
-    -- coreutils
-    log("ok", "package: coreutils")
-    ex("find external/coreutils out/etc/motd.txt -type f | grep -v install | sed 's/external\\/coreutils/out/g' | utils/mtar.lua > pkg/coreutils.mtar")
-    -- corelibs
-    log("ok", "package: corelibs")
-    ex("find external/corelibs -type f | sed 's/external\\/corelibs/out/g' | utils/mtar.lua > pkg/corelibs.mtar")
-    -- tle
-    log("ok", "package: tle")
-    ex("find out/usr/share out/bin/tle.lua -type f | utils/mtar.lua > pkg/tle.mtar")
-    -- man pages
-    log("ok", "package: manpages")
-    ex("find external/manpages -type f | sed 's/external\\/manpages/out/g' | utils/mtar.lua > pkg/manpages.mtar")
-    -- upm
-    log("ok", "package: upm")
-    ex("find external/upm -type f | sed 's/external\\/upm/out/g' | utils/mtar.lua > pkg/upm.mtar")
-  end
-  if args.ocvm then
+ if args.ocvm then
     os.execute("ocvm ..")
   end
 end
