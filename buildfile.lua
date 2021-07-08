@@ -1,7 +1,7 @@
 -- buildfile
 
 local OS = "ULOS"
-local REL = os.date("%y.%m").."-" .. (os.getenv("ULOSREL") or "1.2")
+local REL = os.date("%y.%m").."-" .. (os.getenv("ULOSREL") or "1.3")
 
 local seq = {
   {name = "cynosure", flags = "KMODS=extra/net/base,extra/getgpu"},
@@ -19,14 +19,13 @@ local extern = {
   "coreutils",
 }
 
-local env = {}
+_G.env = {}
 
 local build = function(dir)
   log("err", "building sub-project ", dir.name)
-  ex("cd", dir.name, "; OS='"..OS.." "..REL.."'",
+  ex("cd", dir.name, "; OS='"..OS.." "..REL.."' ULOSREL="..REL,
     dir.flags, table.concat(env, " "), "../build", dir.args or "", "; cd ..")
 end
-
 
 _G.main = function(args)
   for k,v in pairs(args) do
