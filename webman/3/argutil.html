@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+
+<link rel="stylesheet" href="https://oz-craft.pickardayune.com/blog/style.css">
+
+<html>
+  <title>argutil(3)</title>
+  ULOS Manual Pages - argutil(3) | <a href="..">Back</a><br><br>
+  <body>
+    <span style='color:#FFF;font-weight:bold;'>NAME</span><br>&nbsp&nbspargutil - argument parsing utilities<br><br><span style='color:#FFF;font-weight:bold;'>DESCRIPTION</span><br>&nbsp&nbsp<span style='color:#0AA;font-weight:italic;'>argutil</span> provies a basic OpenOS-style argument parser to all programs.&nbsp&nbspIt is primarily intended to prevent most programs from requiring their own argument parser.<br><br><span style='color:#FFF;font-weight:bold;'>FUNCTIONS</span><br>&nbsp&nbsp<span style='color:#55F;font-weight:bold;'>parse</span>(<span style='color:#F5F;font-weight:bold;'>...</span>): <span style='color:#0F0;font-weight:bold;'>table</span>, <span style='color:#0F0;font-weight:bold;'>table</span><br>&nbsp&nbsp&nbsp&nbspSort the varargs into <span style='color:#0F0;font-weight:bold;'>args</span> and <span style='color:#0F0;font-weight:bold;'>opts</span>, then return them in that order.&nbsp&nbspThis will work for most things.&nbsp&nbspWhen <span style='color:#55F;font-weight:bold;'>parse</span> encounters a <span style='color:#FF0;font-weight:bold;'>--</span>, it will stop looking for options and dump any remaining varargs into the <span style='color:#0F0;font-weight:bold;'>args</span> table.<br><br>&nbsp&nbsp&nbsp&nbsp<span style='color:#0F0;font-weight:bold;'>args</span> is simply an array of arguments;&nbsp&nbsp<span style='color:#0F0;font-weight:bold;'>opts</span> is a map, such that <span style='color:#0F0;font-weight:bold;'>opts</span>[<span style='color:#FFF;font-weight:bold;'>option</span>] <span style='color:#55F;font-weight:bold;'>=</span> <span style='color:#FFF;font-weight:bold;'>value</span>.<br><br><span style='color:#FFF;font-weight:bold;'>COPYRIGHT</span><br>&nbsp&nbspULOS Core Libraries copyright (c) 2021 Ocawesome101 under the DSLv2.<br><br><span style='color:#FFF;font-weight:bold;'>REPORTING BUGS</span><br>&nbsp&nbspBugs should be reported at <span style='color:#55F;font-weight:bold;'><a href='https://github.com/ocawesome101/oc-ulos/issues'>https://github.com/ocawesome101/oc-ulos/issues</a></span>.<br>
+  </body>
+</html>
+

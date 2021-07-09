@@ -49,6 +49,7 @@ Available \27[93mOPTIONS\27[39m:\
   \27[33mnorebuild\27[39m:  do not rebuild the system before performing further actions.\
   \27[33mrelease\27[39m:    create a bootable MTAR archive (release image)\
   \27[33mhelp\27[39m:       display this help.\
+  \27[33mwebman\27[39m:     generate manual pages in web format.\
   \27[33mocvm\27[39m:       automatically execute 'ocvm ..' when the build is complete.  used for my personal development setup.\
 ")
     os.exit(1)
@@ -97,7 +98,11 @@ Available \27[93mOPTIONS\27[39m:\
     end
     os.remove("release.mtar")
   end
- if args.ocvm then
+  if args.webman then
+    os.execute("rm -rf webman; mkdir -p webman/{1..7}")
+    os.execute("for f in $(find external/manpages/usr/man -type f); do utils/manfmt.lua $f > webman/$(echo $f | cut -d '/' -f5,6).html; done")
+  end
+  if args.ocvm then
     os.execute("ocvm ..")
   end
 end
