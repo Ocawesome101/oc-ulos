@@ -18,6 +18,8 @@ To build, just run `./build` from the repository root.  Output will be placed in
 
 To develop ULOS, clone the repository, then run `./setup.sh` from the repository root.
 
+Manual pages are available at https://oz-craft.pickardayune.com/man/ulos.
+
 // PRIMARY FEATURES
 
 At the core of ULOS, the Cynosure kernel's VT100 emulator is nearly as fast as the OpenOS 'term' API (only a second or two slower when writing huge amounts of text, plus color changes, to the terminal), proof that VT100 in OpenComputers doesn't have to be slow[1].

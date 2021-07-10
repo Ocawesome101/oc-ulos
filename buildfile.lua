@@ -99,8 +99,7 @@ Available \27[93mOPTIONS\27[39m:\
     os.remove("release.mtar")
   end
   if args.webman then
-    os.execute("rm -rf webman; mkdir -p webman/{1..7}")
-    os.execute("for f in $(find external/manpages/usr/man -type f); do utils/manfmt.lua $f > webman/$(echo $f | cut -d '/' -f5,6).html; done")
+    ex("utils/mkman.sh ", args.noupload and "" or "upload")
   end
   if args.ocvm then
     os.execute("ocvm ..")

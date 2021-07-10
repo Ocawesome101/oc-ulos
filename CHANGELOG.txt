@@ -83,3 +83,4 @@ ULOS 21.07-r1.3:
   *  The /etc/rf/ttys script now sets {stdin,stdout,stderr}.tty to the ID of the attached TTY;  for example, 2.  Previously it would be set to `true`.
   *  UPM's `search` functionality now matches on patterns, rather than requiring the full package name; this does not impact installation or removal.
   *  There is now a `hostname` utility for getting and setting the system hostname.
+  *  There are now manual pages for `more`, the `sysfs`, `getgpu`, the `network` API, and `edit`.

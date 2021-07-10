@@ -28,7 +28,7 @@ local base = [[
 
 <html>
   <title>%s</title>
-  ULOS Manual Pages - %s | <a href="..">Back</a><br><br>
+  ULOS Manual Pages - %s | <a href="../%s">Back</a><br><br>
   <body>
     %s
   </body>
@@ -51,5 +51,5 @@ for i=1, #args, 1 do
   local name = args[i]:match("[^/]+/[^/]+$")
   name = name:sub(3) .. "(" .. name:sub(1,1) .. ")"
 
-  print(base:format(name, name, data))
+  print(base:format(name, name, name:sub(-2,-2), data))
 end
