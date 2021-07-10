@@ -9,7 +9,7 @@ local patterns = {
   {">", ">"},
   {"\n", "<br>"},
   {"%*{(..-)}", "<span style='color:#FFF;font-weight:bold;'>%1</span>"},
-  {"%${(..-)}", "<span style='color:#0AA;font-weight:italic;'>%1</span>"},
+  {"%${(..-)}", "<span style='color:#0AA;font-weight:bold;font-style:italic;'>%1</span>"},
   {"@{(..-)}",  "<span style='color:#55F;font-weight:bold;'><a href='%1'>%1</a></span>"},
   {"#{(..-)}",  "<span style='color:#FF0;font-weight:bold;'>%1</span>"},
   {"red{(..-)}", "<span style='color:#F00;font-weight:bold;'>%1</span>"},
