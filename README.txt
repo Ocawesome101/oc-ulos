@@ -4,9 +4,9 @@ A Unix-Like OS for OpenComputers.  I need to stop writing these.
 
 Structured similarly to Apotheosis, but hopefully with a slightly better architecture.
 
-// USER GUIDE
+// INSTALLATION + USER GUIDE
 
-See `USERGUIDE.txt`.
+See `USERGUIDE.txt`.  An installation guide is available at https://www.youtube.com/watch?v=WZFetEfLvqo.
 
 // BUILDING
 
