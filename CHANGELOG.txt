@@ -84,3 +84,6 @@ ULOS 21.07-r1.3:
   *  UPM's `search` functionality now matches on patterns, rather than requiring the full package name; this does not impact installation or removal.
   *  There is now a `hostname` utility for getting and setting the system hostname.
   *  There are now manual pages for `more`, the `sysfs`, `getgpu`, the `network` API, and `edit`.
+  *  Manual pages can now be viewed in a web browser at https://oz-craft.pickardayune.com/man/ulos.
+  *  Typos in a few manual pages have been fixed.
+  *  UPM has been split into a library and a command;  this is entirely for speed reasons and the library is not intended for use in other programs.
