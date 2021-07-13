@@ -72,3 +72,18 @@ ULOS 21.06-r1.2:
   *  /etc/motd.txt is now included in the 'coreutils' package.
   *  The release image now includes an 'installed.list', so that a system installed using the offline method will be upgradeable using UPM.
   *  A small bug with the readline() library has been fixed.
+  *  Added a basic 'more' pager.
+
+ULOS 21.07-r1.3:
+  *  Release 1.3.
+  *  There is now an optional `getgpu()` function, for getting the GPU bound to a specific TTY.
+  *  Several breaking bugs in Cynosure's kernel argument parsing code have finally been fixed.
+  *  Cynosure now features proper hostname support in its network API.
+  *  Refinement has gained support for loading and saving the hostname from /etc/hostname during startup and shutdown.
+  *  The /etc/rf/ttys script now sets {stdin,stdout,stderr}.tty to the ID of the attached TTY;  for example, 2.  Previously it would be set to `true`.
+  *  UPM's `search` functionality now matches on patterns, rather than requiring the full package name; this does not impact installation or removal.
+  *  There is now a `hostname` utility for getting and setting the system hostname.
+  *  There are now manual pages for `more`, the `sysfs`, `getgpu`, the `network` API, and `edit`.
+  *  Manual pages can now be viewed in a web browser at https://oz-craft.pickardayune.com/man/ulos.
+  *  Typos in a few manual pages have been fixed.
+  *  UPM has been split into a library and a command;  this is entirely for speed reasons and the library is not intended for use in other programs.

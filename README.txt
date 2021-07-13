@@ -4,9 +4,9 @@ A Unix-Like OS for OpenComputers.  I need to stop writing these.
 
 Structured similarly to Apotheosis, but hopefully with a slightly better architecture.
 
-// USER GUIDE
+// INSTALLATION + USER GUIDE
 
-See `USERGUIDE.txt`.
+See `USERGUIDE.txt`.  An installation guide is available at https://www.youtube.com/watch?v=WZFetEfLvqo.
 
 // BUILDING
 
@@ -17,6 +17,8 @@ Make sure to clone with `--recursive`, since the repository has submodules.
 To build, just run `./build` from the repository root.  Output will be placed in `out`.
 
 To develop ULOS, clone the repository, then run `./setup.sh` from the repository root.
+
+Manual pages are available at https://oz-craft.pickardayune.com/man/ulos.
 
 // PRIMARY FEATURES
 

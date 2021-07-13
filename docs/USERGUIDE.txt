@@ -104,7 +104,7 @@ If you select 'y', the installer will ask whether to include manual pages and TL
 
     Install the full system (manual pages, TLE)?  [Y/n]: █
 
-Once this process has been completed, the installer will install ULOS to the selected medium.  This will take some time.  Once the installer has finished, it will silently exit.
+Once this process has been completed, the installer will install ULOS to the selected medium.  This will take some time.  Once the installer has finished, it will print information relating to user creation and exit.
 
 You may continue to experiment with the live environment, or restart your computer and boot from the writable freshly-installed medium.
 
@@ -227,6 +227,15 @@ The ULOS filesystem hierarchy is as follows:
   A fairly detailed help text will be printed if UPM is invoked with the '--help' command line option, or the 'help' command verb.
 
   See the UPM manual page for more details.
+
+/ Installing packages
+
+    upm install <package ...>
+
+/ Update the system
+  
+    upm update
+    upm upgrade
 
 
 /// Troubleshooting
