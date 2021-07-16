@@ -92,3 +92,11 @@ ULOS 21.07-r1.3:
   *  The `termio` library now has a `cursorVisible()` function, for setting cursor visibility.
   *  `sv.list()` now behaves correctly.
   *  The `find` command now prints usage to the standard error if no arguments are specified.
+
+ULOS 21.07-r1.4:
+  *  Release 1.4.
+  *  UPM now displays progress bars while downloading packages, as well as the total download size before package installation.
+  *  Fixed a bug with the Cynosure `sysfs`'s TTY handler not properly flushing the TTY stream.
+  *  Cynosure's `sysfs` now exports handle templates' `flush` functions where it previously did not.
+  *  `rm` no longer chokes under certain situations.
+  *  The Cynosure Loader's default kernel flags now reduce kernel output during boot.
