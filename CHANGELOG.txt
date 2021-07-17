@@ -106,3 +106,4 @@ ULOS 21.07-r1.4:
   *  The `package.protect` function has been fixed to that `pairs` and `ipairs` behave properly on the protected table.
   *  The `config` library's `bracket` preset now saves `nil` values.
   *  UPM will now remove files that a package stops owning after an upgrade.
+  *  The Cynosure TTY's maximum buffer size is now 2048 bytes.  This may change or become configurable in the future.
