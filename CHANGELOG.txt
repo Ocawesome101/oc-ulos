@@ -104,3 +104,5 @@ ULOS 21.07-r1.4:
   *  The `sv` command can now add, remove, and control autostart of services.
        >  The `sv` API has functions for this accordingly.
   *  The `package.protect` function has been fixed to that `pairs` and `ipairs` behave properly on the protected table.
+  *  The `config` library's `bracket` preset now saves `nil` values.
+  *  UPM will now remove files that a package stops owning after an upgrade.
