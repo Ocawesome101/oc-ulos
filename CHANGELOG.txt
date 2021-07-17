@@ -101,4 +101,6 @@ ULOS 21.07-r1.4:
   *  `rm` no longer chokes under certain situations.
   *  The Cynosure Loader's default kernel flags now reduce kernel output during boot.
   *  Cynosure's terminal emulator now does not act on ctrl-D while raw mode is enabled.  The old behavior was considered a bug.
-  *  
+  *  The `sv` command can now add, remove, and control autostart of services.
+       >  The `sv` API has functions for this accordingly.
+  *  The `package.protect` function has been fixed to that `pairs` and `ipairs` behave properly on the protected table.
