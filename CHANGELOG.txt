@@ -100,3 +100,5 @@ ULOS 21.07-r1.4:
   *  Cynosure's `sysfs` now exports handle templates' `flush` functions where it previously did not.
   *  `rm` no longer chokes under certain situations.
   *  The Cynosure Loader's default kernel flags now reduce kernel output during boot.
+  *  Cynosure's terminal emulator now does not act on ctrl-D while raw mode is enabled.  The old behavior was considered a bug.
+  *  
