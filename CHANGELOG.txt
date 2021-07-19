@@ -107,3 +107,10 @@ ULOS 21.07-r1.4:
   *  The `config` library's `bracket` preset now saves `nil` values.
   *  UPM will now remove files that a package stops owning after an upgrade.
   *  The Cynosure TTY's maximum buffer size is now 2048 bytes.  This may change or become configurable in the future.
+
+ULOS 21.07-r1.5:
+  *  Release 1.5.
+  *  Cynosure's `os.exit()` function now behaves properly.
+  *  `readline` now accepts the `noexit` option to not exit when ctrl-D is pressed.
+  *  `readline` now accepts a `complete` function, which is given the current text buffer and a session ID and expected to make something of it.
+  *  
