@@ -4,7 +4,7 @@ local OS = "ULOS"
 local REL = os.date("%y.%m").."-" .. (os.getenv("ULOSREL") or "1.3")
 
 local seq = {
-  {name = "cynosure", flags = "KMODS=extra/net/base,extra/getgpu"},
+  {name = "cynosure", flags = ""},
   {name = "refinement", flags = ""}
 }
 
