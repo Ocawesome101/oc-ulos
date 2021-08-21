@@ -116,3 +116,9 @@ ULOS 21.07-r1.5:
   *  The default task time limit is now 0.1s, down from 0.5s.  This does not have a noticeable impact on performance and improves responsiveness while programs loop.
   *  A few improvements have been made to the Lua REPL.
   *  Cynosure now has a `sound` API.
+  *  Fixed a bug with Cynosure's `load()` wrapper pre-emption scheme causing `coroutine.yield()` to misbehave.
+  *  There is a new kernel option, `no_wrap_coroutine`, which disables Cynosure's `coroutine` wrapper for userspace only.
+  *  `\27[0m` now properly resets the TTY's foreground and background colors.
+  *  `io.popen` now sometimes works, but should not be relied upon.
+  *  `/usr/lib` is now in the default package path.
+  *  A rewritten version of the ULOS Package Manager is under construction but is nowhere near ready for use yet.
