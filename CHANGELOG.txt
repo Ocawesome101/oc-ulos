@@ -130,3 +130,4 @@ ULOS 21.08-r1.5:
   *  Cynosure's terminal emulator now supports `\27[0;X;Y;W;Hg` to clear only specific areas of the screen.  More GPU functions may be added in the future.
   *  The `gpuproxy` API is now its own package.
   *  There is now an option for the release image to autostart the installer.  Download `release_noautostart.lua` if you do not want the installer to autostart; it can still be autostarted by running `installer` from the command line.
+  *  The default Message Of The Day has been changed.
