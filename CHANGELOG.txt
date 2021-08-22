@@ -108,7 +108,7 @@ ULOS 21.07-r1.4:
   *  UPM will now remove files that a package stops owning after an upgrade.
   *  The Cynosure TTY's maximum buffer size is now 2048 bytes.  This may change or become configurable in the future.
 
-ULOS 21.07-r1.5:
+ULOS 21.08-r1.5:
   *  Release 1.5.
   *  Cynosure's `os.exit()` function now behaves properly.
   *  `readline` now accepts the `noexit` option to not exit when ctrl-D is pressed.
@@ -121,4 +121,12 @@ ULOS 21.07-r1.5:
   *  `\27[0m` now properly resets the TTY's foreground and background colors.
   *  `io.popen` now sometimes works, but should not be relied upon.
   *  `/usr/lib` is now in the default package path.
-  *  A rewritten version of the ULOS Package Manager is under construction but is nowhere near ready for use yet.
+  *  There is a new installer, `installer`, and the old one has been moved to `minstall`.
+  *  Both installers now assist in the adding of users, creation of home directories, and hostname setup.
+  *  There are two new commands, `mkpasswd` and `hnsetup`, which should only be used during system installation.
+  *  Cynosure now provides a `tty` interface for using the kernel's TTY driver on userspace-provided GPU objects.
+  *  Cynosure's terminal emulator supports an "xoff" mode, where all input is suspended.  Use with caution.
+  *  The `getgpu` function has been moved into the `tty` API.  Programs will need to be updated to reflect this.
+  *  Cynosure's terminal emulator now supports `\27[0;X;Y;W;Hg` to clear only specific areas of the screen.  More GPU functions may be added in the future.
+  *  The `gpuproxy` API is now its own package.
+  *  There is now an option for the release image to autostart the installer.  Download `release_noautostart.lua` if you do not want the installer to autostart; it can still be autostarted by running `installer` from the command line.
