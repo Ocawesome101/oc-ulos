@@ -17,7 +17,8 @@ local extern = {
   "coresvc",
   "corelibs",
   "coreutils",
-  "installer"
+  "installer",
+  "gpuproxy"
 }
 
 _G.env = {}
