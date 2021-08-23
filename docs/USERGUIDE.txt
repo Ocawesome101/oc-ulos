@@ -2,6 +2,8 @@
 
 This is the official user guide for the Unix-Like Operating System (ULOS).  Any errors should be reported on the issues page of this repository.
 
+/!\ Certain sections of this document are outdated.  Look at the README.txt of this project for up-to-date links. /!\
+
 /// Contents
 
 Conventions
