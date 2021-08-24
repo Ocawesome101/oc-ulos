@@ -131,3 +131,11 @@ ULOS 21.08-r1.5:
   *  The `gpuproxy` API is now its own package.
   *  There is now an option for the release image to autostart the installer.  Download `release_noautostart.lua` if you do not want the installer to autostart; it can still be autostarted by running `installer` from the command line.
   *  The default Message Of The Day has been changed.
+
+ULOS 21.08-r1.6:
+  *  Release 1.6.
+  *  There is now a basic Terminal Window Manager, `wm`, available as a separate package.
+  *  A bug with the Cynosure terminal where signals would still be sent even if `XOFF` was set has been fixed.
+  *  Programs can now detect if they're running with a `gpuproxy`-created proxy, with the `isProxy` field.
+  *  The Cynosure Loader now calls loaded files with `xpcall()` for traceback support.
+  *  A few bugs with `gpuproxy`'s `buffer` wrapper have been fixed.
