@@ -134,7 +134,7 @@ ULOS 21.08-r1.5:
 
 ULOS 21.08-r1.6:
   *  Release 1.6.
-  *  There is now a basic Terminal Window Manager, `wm`, available as a separate package.
+  *  The ULOS Window Manager, `uwm`, is now available as a separate package.
   *  The Open System's GUI has been mostly ported as the `osgui` package.
   *  A bug with the Cynosure terminal where signals would still be sent even if `XOFF` was set has been fixed.
   *  Programs can now detect if they're running with a `gpuproxy`-created proxy, with the `isProxy` field.
@@ -142,3 +142,5 @@ ULOS 21.08-r1.6:
   *  A few bugs with `gpuproxy`'s `buffer` wrapper have been fixed.
   *  Cynosure's `loadfile()` now behaves properly when given an environment.
   *  The `extra` repository is now included in UPM's default configuration.
+  *  Cynosure's `process.kill` function now behaves correctly.
+  *  There is finally a `mv` command.
