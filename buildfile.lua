@@ -17,7 +17,7 @@ local extern = {
   "coresvc",
   "corelibs",
   "coreutils",
-  "gui",
+  "uwm",
   "gpuproxy"
 }
 

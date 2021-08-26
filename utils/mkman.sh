@@ -1,4 +1,4 @@
-paths="manpages coresvc upm"
+paths="manpages coresvc upm uwm osgui installer gpuproxy"
 
 rm -rf webman
 mkdir -p webman
