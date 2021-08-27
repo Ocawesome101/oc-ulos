@@ -146,4 +146,8 @@ ULOS 21.08-r1.6:
   *  There is finally a `mv` command.
   *  Fixed a bug with Cynosure's `load()` wrapper wherein signals would sometimes be either duplicated or not sent.
   *  The Cynosure TTY implementation now behaves as expected when given `\27[nnG`.
-  *  Refinement's `sv.list()` now returns key-value pairs of *all* scripts and services, not just those currently running.
+  *  Refinement's `sv.list()` now returns more data.
+  *  Updated `sv` to reflect this.
+  *  The `require()` function has been moved from Refinement into Cynosure.  This enables running any userspace software as init with the `init=PATH` kernel argument.
+  *  Some scheduler weirdness with process environments has been sorted.
+  *  The IO stream passed to `init` now has the `tty` field set.
