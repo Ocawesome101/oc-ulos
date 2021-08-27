@@ -145,3 +145,5 @@ ULOS 21.08-r1.6:
   *  Cynosure's `process.kill` function now behaves correctly.
   *  There is finally a `mv` command.
   *  Fixed a bug with Cynosure's `load()` wrapper wherein signals would sometimes be either duplicated or not sent.
+  *  The Cynosure TTY implementation now behaves as expected when given `\27[nnG`.
+  *  Refinement's `sv.list()` now returns key-value pairs of *all* scripts and services, not just those currently running.
