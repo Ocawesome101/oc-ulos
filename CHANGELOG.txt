@@ -144,4 +144,4 @@ ULOS 21.08-r1.6:
   *  The `extra` repository is now included in UPM's default configuration.
   *  Cynosure's `process.kill` function now behaves correctly.
   *  There is finally a `mv` command.
-  *  Ficed a bug with Cynosure's `load()` wrapper wherein signals would sometimes be either duplicated or not sent.
+  *  Fixed a bug with Cynosure's `load()` wrapper wherein signals would sometimes be either duplicated or not sent.
