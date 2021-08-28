@@ -153,3 +153,8 @@ ULOS 21.08-r1.6:
   *  The IO stream passed to `init` now has the `tty` field set.
   *  Cynosure's TTY now supports negative numbers as arguments.
   *  Added `\27[1;XX;YY;WW;HH;RX;RYg` as an interface to `gpu.copy`.
+  *  Cynosure now supports displaying a boot splash on startup.
+  *  Refinement's logger has been updated to look slightly nicer with Cynosure's bootsplash enabled - the standard logger will be used if the bootsplash is not enabled.
+  *  The kernel command line is now accessible through `/sys/cmdline`.
+  *  Cynosure's `users.usermod` function now behaves correctly.
+  *  The `passwd` command will only prompt for a password if the user being modified is not the current user OR if no arguments have been passed, but not, for example, if changing the shell.
