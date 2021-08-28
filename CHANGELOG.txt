@@ -151,3 +151,5 @@ ULOS 21.08-r1.6:
   *  The `require()` function has been moved from Refinement into Cynosure.  This enables running any userspace software as init with the `init=PATH` kernel argument.
   *  Some scheduler weirdness with process environments has been sorted.
   *  The IO stream passed to `init` now has the `tty` field set.
+  *  Cynosure's TTY now supports negative numbers as arguments.
+  *  Added `\27[1;XX;YY;WW;HH;RX;RYg` as an interface to `gpu.copy`.
