@@ -6,7 +6,9 @@ Structured similarly to Apotheosis, but hopefully with a slightly better archite
 
 // INSTALLATION + USER GUIDE
 
-See `USERGUIDE.txt`.  An installation guide is available at https://www.youtube.com/watch?v=WZFetEfLvqo.
+Run `pastebin run L7iWx5j7` in an OpenOS shell to begin the installation process.  The installer should be fairly self-explanatory.
+
+An outdated user guide + installation guide is available at `docs/USERGUIDE.txt`.
 
 // BUILDING
 
