@@ -8,7 +8,7 @@ export ULOSVERSION="$OS $DATE-$ULOSREL"
 export PREPROCESSOR="$PWD/utils/proc.lua"
 
 ogdir=$PWD
-external="cldr corelibs coreutils manpages upm"
+external="cldr corelibs coreutils manpages upm uwm gpuproxy"
 tobuild="cynosure external/usysd"
 
 build() {
@@ -16,7 +16,7 @@ build() {
   cd $1; ./build.sh; cd $ogdir
 }
 
-rm -rf out && mkdir -p out/boot
+rm -rf out && mkdir -p out/{r,b}oot
 for b in $tobuild; do
   build $b
 done
@@ -26,5 +26,5 @@ for ext in $external; do
 done
 
 cp cynosure/kernel.lua out/boot/cynosure.lua
-cp -r external/usysd/out/* out/
+cp -rv external/usysd/out/* out/
 echo "VERSION=\"$ULOSVERSION\"" | cat external/os-release - > out/etc/os-release

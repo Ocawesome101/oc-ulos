@@ -161,3 +161,5 @@ ULOS 21.08-r1.6:
   *  Cynosure's TTY now has 24-bit color support through the `\27[{3,4}8;2;RRR;GGG;BBBm` extension.
   *  `login` now prints the value of `_OSVERSION` and the TTY ID rather than just `Welcome to ULOS.` since the first line of the MOTD is `Welcome to ULOS!`.
   *  Fixed a bug with the Cynosure TTY's output line buffer where it would sometimes not flush properly.
+  *  Cynosure's TTY should now mostly support UTF-8 input and output.
+  *  Refinement has been replaced by USysD as the default init system.
