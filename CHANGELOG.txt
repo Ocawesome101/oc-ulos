@@ -160,3 +160,4 @@ ULOS 21.08-r1.6:
   *  The `passwd` command will only prompt for a password if the user being modified is not the current user OR if no arguments have been passed, but not, for example, if changing the shell.
   *  Cynosure's TTY now has 24-bit color support through the `\27[{3,4}8;2;RRR;GGG;BBBm` extension.
   *  `login` now prints the value of `_OSVERSION` and the TTY ID rather than just `Welcome to ULOS.` since the first line of the MOTD is `Welcome to ULOS!`.
+  *  Fixed a bug with the Cynosure TTY's output line buffer where it would sometimes not flush properly.
