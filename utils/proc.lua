@@ -2,6 +2,8 @@
 -- apparently, LuaComp doesn't work under ULOS
 -- I'll fix that later, but for now this will do
 
+_G.env = setmetatable({}, {__index = function(t, k) return os.getenv(k) end})
+
 local proc, handle
 
 local dirs = {
