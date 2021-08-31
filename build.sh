@@ -23,4 +23,4 @@ done
 
 cp cynosure/kernel.lua out/boot/cynosure.lua
 cp -rv external/usysd/out/* out/
-echo "VERSION=\"$ULOSVERSION\"" | cat external/os-release - > out/etc/os-release
+printf "VERSION=\"$ULOSVERSION\"\nBUILD_ID=\"$DATE\"\nVERSION_ID=\"$ULOSREL\"\n" | cat external/os-release - > out/etc/os-release

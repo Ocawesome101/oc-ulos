@@ -162,4 +162,11 @@ ULOS 21.08-r1.6:
   *  `login` now prints the value of `_OSVERSION` and the TTY ID rather than just `Welcome to ULOS.` since the first line of the MOTD is `Welcome to ULOS!`.
   *  Fixed a bug with the Cynosure TTY's output line buffer where it would sometimes not flush properly.
   *  Cynosure's TTY should now mostly support UTF-8 input and output.
-  *  Refinement has been replaced by USysD as the default init system.
+  *  USysD has replaced Refinement as the default init system.
+  *  Cynosure's `io.lines()` function now behaves as expected.
+  *  The Cynosure TTY's "XOFF" mode now disables output as well as input.
+  *  Cynosure's `users.exec_as` function now returns the PID of the process it spawned if the `wait` argument is not specified.  It also now supports a sixth argument, `stdio`, which sets *all* input and output streams of the spawned process to the provided stream.  Finally, a password is now required only if the user calling the function is not `root`.
+  *  Cynosure's `io` library now canonicalizes paths.  This is an improvement over the previous system that required a userspace hack.
+  *  There is now a `quit` signal in `process.signals`.
+  *  There is now a file `/etc/os-release` containing a set of key-value pairs describing the OS.  This is in a similar format to the standard Linux file of the same name.
+  *  There is now an official ULOS logo.
