@@ -134,7 +134,8 @@ ULOS 21.08-r1.5:
 
 ULOS 21.08-r1.6:
   *  Release 1.6.
-  *  The ULOS Window Manager, `uwm`, is now available as a separate package.
+  *  The ULOS Web Site is now live at https://ocawesome101.github.io/ulos.
+  *  The ULOS Window Manager, `uwm`, is now available as a package in the `extra` repository.
   *  The Open System's GUI has been mostly ported as the `osgui` package.
   *  A bug with the Cynosure terminal where signals would still be sent even if `XOFF` was set has been fixed.
   *  Programs can now detect if they're running with a `gpuproxy`-created proxy, with the `isProxy` field.
@@ -170,3 +171,5 @@ ULOS 21.08-r1.6:
   *  There is now a `quit` signal in `process.signals`.
   *  There is now a file `/etc/os-release` containing a set of key-value pairs describing the OS.  This is in a similar format to the standard Linux file of the same name.
   *  There is now an official ULOS logo.
+  *  There is now an official Cynosure logo.
+  *  There is now a standalone ULOS installer for OpenOS using a badly ported version of UPM, as well as a script to download and boot the latest release image.
