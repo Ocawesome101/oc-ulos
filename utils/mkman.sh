@@ -1,4 +1,4 @@
-paths="manpages coresvc upm uwm osgui installer gpuproxy"
+paths="manpages coresvc upm uwm gpuproxy"
 
 rm -rf webman
 mkdir -p webman
@@ -6,7 +6,7 @@ mkdir -p webman
 htmlbase="
 <!DOCTYPE html>
 
-<link rel='stylesheet' href='https://oz-craft.pickardayune.com/blog/style.css'>
+<link rel='stylesheet' href='https://oz-craft.pickardayune.com/man/ulos/style.css'>
 
 <html>
   <title>ULOS Manual Pages</title>
@@ -22,6 +22,7 @@ htmlend="
 "
 
 printf "$htmlbase" > webman/index.html
+wget https://raw.githubusercontent.com/ocawesome101/ulos/master/style.css -O webman/style.css
 
 for category in $(seq 1 9); do
   mkdir -p webman/$category
