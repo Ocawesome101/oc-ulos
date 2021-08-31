@@ -24,7 +24,7 @@ local patterns = {
 local base = [[
 <!DOCTYPE html>
 
-<link rel="stylesheet" href="https://oz-craft.pickardayune.com/blog/style.css">
+<link rel="stylesheet" href="https://oz-craft.pickardayune.com/man/ulos/style.css">
 
 <html>
   <title>%s</title>

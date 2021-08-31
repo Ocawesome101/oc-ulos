@@ -16,7 +16,7 @@ htmlbase="
 "
 
 htmlend="
-    <span style='italic:true'>This page was auto-generated.</span>
+    <br><span style='text-style:italic'>This page was auto-generated.</span>
   </body>
 </html>
 "
@@ -26,7 +26,7 @@ wget https://raw.githubusercontent.com/ocawesome101/ulos/master/style.css -O web
 
 for category in $(seq 1 9); do
   mkdir -p webman/$category
-  printf "<a href='./%s'>%s</a><br>" $category $category >> webman/index.html
+  printf "<a href='./%s'>%s</a>&nbsp;&nbsp;" $category $category >> webman/index.html
   printf "$htmlbase" > webman/$category/index.html
 done
 
