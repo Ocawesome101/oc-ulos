@@ -7,19 +7,19 @@ _G.env = setmetatable({}, {__index = function(t, k) return os.getenv(k) end})
 local proc, handle
 
 local dirs = {
-  ["%-%-#include \"(.+)\""] = function(f)
-    return proc(f)
-  end,
-  ["@%[%{(.+)%}%]"] = function(ex)
+  {"@%[%{(.+)%}%]", function(ex)
     return assert(load("return " .. ex, "=eval", "t", _G))()
-  end,
+  end},
+  {"%-%-#include \"(.+)\"", function(f)
+    return proc(f)
+  end},
 }
 
 proc = function(f)
   io.write("\27[36m *\27[39m processing " .. f .. "\n")
   for line in io.lines(f) do
-    for k, v in pairs(dirs) do
-      line = line:gsub(k, v)
+    for k, v in ipairs(dirs) do
+      line = line:gsub(v[1], v[2])
     end
     handle:write(line .. "\n")
   end
