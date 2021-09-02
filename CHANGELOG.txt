@@ -178,3 +178,4 @@ ULOS 21.09-r1.7:
   *  Release 1.7.
   *  Cynosure's TTY now properly supports 24-bit color.
   *  The `ANSI_COLOR` field in `/etc/os-release` has been updated to `38;2;102;182;255`;  it was previously `96`.
+  *  A bug with Cynosure's `load()` wrapper where a `for` specifier would sometimes not be recognized has been fixed.
