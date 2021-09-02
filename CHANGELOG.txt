@@ -173,3 +173,7 @@ ULOS 21.08-r1.6:
   *  There is now an official ULOS logo.
   *  There is now an official Cynosure logo.
   *  There is now a standalone ULOS installer for OpenOS using a badly ported version of UPM, as well as a script to download and boot the latest release image.
+
+ULOS 21.09-r1.7:
+  *  Release 1.7.
+  *  Cynosure's TTY now properly supports 24-bit color.
