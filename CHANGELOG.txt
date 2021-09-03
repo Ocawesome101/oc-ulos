@@ -188,3 +188,8 @@ ULOS 21.09-r1.7:
   *  The `HOSTNAME` and `PWD` variables are now set by default.
   *  The default shell has changed to `/bin/sh`.
   *  Added `/bin/echo`, which behaves exactly as it should.
+  *  The ULOS Package Manager now checks for conflicting packages during installation.
+  *  `io.popen` should behave as expected now.
+  *  `network:read()` should work properly now.
+  *  `FILE*` streams are now unbuffered if the buffer mode is set to `pipe` as well as if it is set to `none`.
+  *  All of a process's I/O streams are now properly closed when a process exits, unless they point to a TTY.
