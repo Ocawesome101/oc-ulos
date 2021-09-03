@@ -181,3 +181,10 @@ ULOS 21.09-r1.7:
   *  A bug with Cynosure's `load()` wrapper where a `for` specifier would sometimes not be recognized has been fixed.
   *  Writing to a broken pipe now sends the `SIGPIPE` signal to the offending process.
   *  The TTY's signal sending logic has been fixed.
+  *  There is a new shell available, `bsh`.  Its design is similar to the Bourne shell.
+  *  The `sh` script now points to whatever the user's shell is.
+  *  The old `sh` bourne-like shell has been removed.
+  *  Cynosure's managed filesystem driver no longer errors when passed an empty file path.
+  *  The `HOSTNAME` and `PWD` variables are now set by default.
+  *  The default shell has changed to `/bin/sh`.
+  *  
