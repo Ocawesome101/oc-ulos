@@ -187,4 +187,4 @@ ULOS 21.09-r1.7:
   *  Cynosure's managed filesystem driver no longer errors when passed an empty file path.
   *  The `HOSTNAME` and `PWD` variables are now set by default.
   *  The default shell has changed to `/bin/sh`.
-  *  
+  *  Added `/bin/echo`, which behaves exactly as it should.
