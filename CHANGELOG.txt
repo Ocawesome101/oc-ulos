@@ -194,3 +194,5 @@ ULOS 21.09-r1.7:
   *  `FILE*` streams are now unbuffered if the buffer mode is set to `pipe` as well as if it is set to `none`.
   *  All of a process's I/O streams are now properly closed when a process exits, unless they point to a TTY.
   *  `/sys/dev/null` now exists as an empty file into which all that is written disappears.
+  *  `/bin/login` now passes `--login` to the shells it executes.
+  *  `readline()` now accepts an `exit` option to set the function it calls when Control-D is pressed.

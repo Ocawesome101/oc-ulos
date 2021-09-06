@@ -1,4 +1,4 @@
-paths="manpages coresvc upm uwm gpuproxy"
+paths="manpages coresvc upm uwm gpuproxy bsh"
 
 rm -rf webman
 mkdir -p webman
