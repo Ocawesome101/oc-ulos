@@ -200,3 +200,5 @@ ULOS 21.09-r1.7:
   *  Cynosure's TTY colors now use the full 16 palette colors available for exact color matching.
   *  Cynosure now supports color profiles and custom colors for the TTY.  This allows switching between terminal palettes with a kernel argument.  These themes are: The default (1), the Breeze theme from Konsole (2), Gruvbox (3), Gruvbox Light (4), PaperColor light (5), and Pale Night (6).
   *  Cynosure's `loadfile()` now supports shebangs.  This eliminates the need for the shell to support them.
+  *  Cynosure now adds support to `checkArg` for the first `n` argument to be a string.  This is useful for functions where arguments are provided in a table.
+  *  The coreutils' `lua` REPL now parses arguments exactly as does the PUC-Rio interpreter.

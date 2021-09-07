@@ -4,7 +4,7 @@
 source utils/env.sh
 
 ogdir=$PWD
-external="cldr corelibs coreutils manpages upm uwm gpuproxy bsh norris"
+external="cldr/ corelibs/ coreutils/ manpages/ upm/ uwm/ gpuproxy/ bsh/ norris/"
 tobuild="cynosure external/usysd"
 
 build() {
@@ -18,8 +18,12 @@ for b in $tobuild; do
 done
 
 for ext in $external; do
-  cp -r external/${ext}/* out/
+  cp -r external/${ext}* out/
 done
+
+cp tle/tle out/bin/tle.lua
+mkdir -p out/usr/share
+cp -r tle/syntax out/usr/share/VLE
 
 cp cynosure/kernel.lua out/boot/cynosure.lua
 cp -rv external/usysd/out/* out/
