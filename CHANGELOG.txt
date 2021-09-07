@@ -196,3 +196,7 @@ ULOS 21.09-r1.7:
   *  `/sys/dev/null` now exists as an empty file into which all that is written disappears.
   *  `/bin/login` now passes `--login` to the shells it executes.
   *  `readline()` now accepts an `exit` option to set the function it calls when Control-D is pressed.
+  *  `ls` now exits with a status of 1 if a file or directory is not found, rather than ignoring it.
+  *  Cynosure's TTY colors now use the full 16 palette colors available for exact color matching.
+  *  Cynosure now supports color profiles and custom colors for the TTY.  This allows switching between terminal palettes with a kernel argument.  These themes are: The default (1), the Breeze theme from Konsole (2), Gruvbox (3), and Gruvbox Light (4).
+  *  Cynosure's `loadfile()` now supports shebangs.  This eliminates the need for the shell to support them.
