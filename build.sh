@@ -21,6 +21,7 @@ for ext in $external; do
   cp -r external/${ext}* out/
 done
 
+cd tle; ./standalone.lua; cd ..
 cp tle/tle out/bin/tle.lua
 mkdir -p out/usr/share
 cp -r tle/syntax out/usr/share/VLE

@@ -19,6 +19,7 @@ local patterns = {
   {"magenta{(..-)}", "<span style='color:#F5F;font-weight:bold;'>%1</span>"},
   {"cyan{(..-)}", "<span style='color:#0AA;font-weight:bold;'>%1</span>"},
   {"white{(..-)}", "<span style='color:#FFF;font-weight:bold;'>%1</span>"},
+  {"gray{(..-)}", "<span style='color:#555;font-weight:bold;'>%1</span>"},
 }
 
 local base = [[

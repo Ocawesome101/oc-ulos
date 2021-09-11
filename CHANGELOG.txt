@@ -203,3 +203,5 @@ ULOS 21.09-r1.7:
   *  Cynosure now adds support to `checkArg` for the first `n` argument to be a string.  This is useful for functions where arguments are provided in a table.
   *  The coreutils' `lua` REPL now parses arguments exactly as does the PUC-Rio interpreter.
   *  The official UPM repositories have moved to http://ulos.pickardayune.com.
+  *  The `text` library's `wrap` function now word-wraps.  It will also preserve the indentation of a line across wraps, such that manual pages now look significantly better.
+  *  There are now manual pages for `tle`.
