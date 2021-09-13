@@ -205,3 +205,6 @@ ULOS 21.09-r1.7:
   *  The official UPM repositories have moved to http://ulos.pickardayune.com.
   *  The `text` library's `wrap` function now word-wraps.  It will also preserve the indentation of a line across wraps, such that manual pages now look significantly better.
   *  There are now manual pages for `tle`.
+  *  `argutil` now has a `getopt` function, with the manual page updated accordingly.
+  *  Fixed a small bug in `less` when jumping down a page.
+  *  `less` now supports searching for a pattern within its buffer.
