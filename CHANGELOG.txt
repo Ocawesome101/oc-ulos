@@ -208,3 +208,5 @@ ULOS 21.09-r1.7:
   *  `argutil` now has a `getopt` function, with the manual page updated accordingly.
   *  Fixed a small bug in `less` when jumping down a page.
   *  `less` now supports searching for a pattern within its buffer.
+  *  Cynosure now supports the Minitel networking stack.
+  *  Fixed a bug in `cp` when copying a single file into a directory.

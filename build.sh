@@ -4,7 +4,7 @@
 source utils/env.sh
 
 ogdir=$PWD
-external="cldr/ corelibs/ coreutils/ manpages/ upm/ uwm/ gpuproxy/ bsh/ norris/"
+external="cldr/ corelibs/ coreutils/ manpages/ upm/ uwm/ gpuproxy/ bsh/ norris/ pkserv/"
 tobuild="cynosure external/usysd"
 
 build() {
@@ -29,3 +29,4 @@ cp -r tle/syntax out/usr/share/VLE
 cp cynosure/kernel.lua out/boot/cynosure.lua
 cp -rv external/usysd/out/* out/
 printf "VERSION=\"$ULOSVERSION\"\nBUILD_ID=\"$DATE\"\nVERSION_ID=\"$ULOSREL\"\n" | cat external/os-release - > out/etc/os-release
+printf "ulos\n" > out/etc/hostname
