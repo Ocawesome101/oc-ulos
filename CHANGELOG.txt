@@ -185,7 +185,7 @@ ULOS 21.09-r1.7:
   *  The `sh` script now points to whatever the user's shell is.
   *  The old `sh` bourne-like shell has been removed.
   *  Cynosure's managed filesystem driver no longer errors when passed an empty file path.
-  *  The `HOSTNAME` and `PWD` variables are now set by default.
+  *  The `HOSTNAME` and `PWD` environment variables are now set by default.
   *  The default shell has changed to `/bin/sh`.
   *  Added `/bin/echo`, which behaves exactly as it should.
   *  The ULOS Package Manager now checks for conflicting packages during installation.
@@ -208,7 +208,15 @@ ULOS 21.09-r1.7:
   *  `argutil` now has a `getopt` function, with the manual page updated accordingly.
   *  Fixed a small bug in `less` when jumping down a page.
   *  `less` now supports searching for a pattern within its buffer.
-  *  Cynosure now supports the Minitel networking stack.
+  *  Cynosure now (at least in theory) supports the Minitel networking stack.
   *  Fixed a bug in `cp` when copying a single file into a directory.
-  *  There is now a `lshw` command.
+  *  There is now a `lshw` command.  It doubles as a `components` implementation when given the `-o` or `--openos` options.
   *  `mount` now prints a more easily readable form of the output from `/sys/mounts` when invoked with no arguments.
+  *  `passwd` has a new flag, `--clear-acls`, to clear all ACLs before processing `--enable` or `--disable`.
+  *  Fixed a small bug with `df`.
+  *  UWM now checks whether the GPU supports VRAM buffers before launching.
+  *  Cynosure now caches `loadfile()` results for 60 seconds after the final time they are used, or until the system runs low on memory.  This provides a moderate performance boost in the shell and other apps, while still allowing the system to run on 384KB of RAM.
+  *  File reads now support pre-emption.
+  *  The `sysfs`'s `filesystem` component handler now strips trailing newlines when setting filesystem labels.
+  *  Cynosure's `checkArg` now supports being given a string as the first argument, and will show the function name in the error
+  *  Fixed a few small bugs with `tle`.
