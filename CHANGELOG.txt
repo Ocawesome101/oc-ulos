@@ -210,3 +210,5 @@ ULOS 21.09-r1.7:
   *  `less` now supports searching for a pattern within its buffer.
   *  Cynosure now supports the Minitel networking stack.
   *  Fixed a bug in `cp` when copying a single file into a directory.
+  *  There is now a `lshw` command.
+  *  `mount` now prints a more easily readable form of the output from `/sys/mounts` when invoked with no arguments.
