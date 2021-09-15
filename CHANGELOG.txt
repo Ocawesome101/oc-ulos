@@ -220,3 +220,7 @@ ULOS 21.09-r1.7:
   *  The `sysfs`'s `filesystem` component handler now strips trailing newlines when setting filesystem labels.
   *  Cynosure's `checkArg` now supports being given a string as the first argument, and will show the function name in the error
   *  Fixed a few small bugs with `tle`.
+
+ULOS 21.10-r1.8:
+  *  Release 1.8.
+  *  Fixed an issue with `edit` where the bottom bar would sometimes scroll up.
