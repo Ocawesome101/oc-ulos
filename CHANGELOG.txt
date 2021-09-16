@@ -229,3 +229,5 @@ ULOS 21.10:
   *  `less`'s scrolling has been greatly optimized and is now much faster and smoother.
   *  Fixed a minor bug with the Cynosure TTY's `\27[S` function.
   *  Fixed pipes in `bsh` misbehaving when a process uses `os.execute`.
+  *  There is now a `getty` package available, providing a service that automatically starts a login prompt on any TTY that does not already have a service assigned to it.
+  *  There are now manual pagees documenting Cynosure's VT100 support, as well as a brief history of the ANSI specification.
