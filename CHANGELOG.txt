@@ -224,3 +224,8 @@ ULOS 21.09-r1.7:
 ULOS 21.10-r1.8:
   *  Release 1.8.
   *  Fixed an issue with `edit` where the bottom bar would sometimes scroll up.
+  *  UPM now uses semantic versions, and has been updated accordingly to version 2.0.0.  **Upgrade to this release with `upm upgrade -f` or the upgrade will fail.**
+  *  The `upm` package now contains a semantic versioning library, `semver`.
+  *  `less`'s scrolling has been greatly optimized and is now much faster and smoother.
+  *  Fixed a minor bug with the Cynosure TTY's `\27[S` function.
+  *  Fixed pipes in `bsh` misbehaving when a process uses `os.execute`.
