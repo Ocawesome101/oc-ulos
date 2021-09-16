@@ -221,8 +221,8 @@ ULOS 21.09-r1.7:
   *  Cynosure's `checkArg` now supports being given a string as the first argument, and will show the function name in the error
   *  Fixed a few small bugs with `tle`.
 
-ULOS 21.10-r1.8:
-  *  Release 1.8.
+ULOS 21.10:
+  *  Release 21.10.  Releases will now be close to monthly.
   *  Fixed an issue with `edit` where the bottom bar would sometimes scroll up.
   *  UPM now uses semantic versions, and has been updated accordingly to version 2.0.0.  **Upgrade to this release with `upm upgrade -f` or the upgrade will fail.**
   *  The `upm` package now contains a semantic versioning library, `semver`.
