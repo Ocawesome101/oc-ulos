@@ -4,7 +4,7 @@
 source utils/env.sh
 
 ogdir=$PWD
-external="cldr/ corelibs/ coreutils/ manpages/ upm/ uwm/ gpuproxy/ bsh/ norris/ getty/"
+external="cldr/ corelibs/ coreutils/ manpages/ upm/ uwm/ gpuproxy/ bsh/ norris/ getty/ sudo/"
 tobuild="cynosure external/usysd"
 
 build() {

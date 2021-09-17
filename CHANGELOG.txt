@@ -231,3 +231,9 @@ ULOS 21.10:
   *  Fixed pipes in `bsh` misbehaving when a process uses `os.execute`.
   *  There is now a `getty` package available, providing a service that automatically starts a login prompt on any TTY that does not already have a service assigned to it.
   *  There are now manual pagees documenting Cynosure's VT100 support, as well as a brief history of the ANSI specification.
+  *  `bsh` now sets the process working directory to the user's home directory on login.
+  *  Added `--help` and `--version` options to `bsh`.
+  *  Fixed a bug with Cynosure's filesystem API.
+  *  Added a `finish_after_arg` option to `argutil.getopt`.
+  *  USysD's service management API now uses a request queue internally, so that services are always spawned from the `init` process.
+  *  The `sudo` utility is now its own package, and requires the `sudo` service to be running in order to function.  However, its policies are now different, and user credentials are "remembered" for 5 minutes after each `sudo` invocation.
