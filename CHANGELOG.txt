@@ -239,4 +239,3 @@ ULOS 21.10:
   *  The `sudo` utility is now its own package, and requires the `sudo` service to be running in order to function.  However, its policies are now different, and user credentials are "remembered" for 5 minutes after each `sudo` invocation.
   *  Switched `bsh` to use `argutil.getopt` over `argutil.parse`.
   *  The `sh` script now passes all arguments recieved to the shell it executes.
-  *  
