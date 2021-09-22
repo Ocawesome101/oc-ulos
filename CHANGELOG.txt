@@ -240,3 +240,4 @@ ULOS 21.10:
   *  Switched `bsh` to use `argutil.getopt` over `argutil.parse`.
   *  The `sh` script now passes all arguments recieved to the shell it executes.
   *  Fixed the `minstall` installer not fully working when running from the same medium that is its target.
+  *  Cynosure will now panic if `init`'s exit status is nonzero.
