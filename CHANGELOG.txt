@@ -241,3 +241,6 @@ ULOS 21.10:
   *  The `sh` script now passes all arguments recieved to the shell it executes.
   *  Fixed the `minstall` installer not fully working when running from the same medium that is its target.
   *  Cynosure will now panic if `init`'s exit status is nonzero.
+  *  Cynosure's `FILE*` implementation now returns itself from `:write()`.  This was an oversight and has been fixed.
+  *  There is now a `netutils` package available, containing a `wget` utility.
+  *  The installer's online mode finally no longer clobbers `/init.lua` (by installing CLDR) except as the last step.
