@@ -244,3 +244,7 @@ ULOS 21.10:
   *  Cynosure's `FILE*` implementation now returns itself from `:write()`.  This was an oversight and has been fixed.
   *  There is now a `netutils` package available, containing a `wget` utility.
   *  The installer's online mode finally no longer clobbers `/init.lua` (by installing CLDR) except as the last step.
+
+ULOS 21.11:
+  *  Release 21.11.
+  *  Fixed a bug with starting services in USysD.
