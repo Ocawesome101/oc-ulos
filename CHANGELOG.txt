@@ -249,3 +249,4 @@ ULOS 21.12:
   *  Release 21.12.
   *  Fixed a bug with starting services in USysD.
   *  Added a new function, `message()`, to Cynosure's `process` API.
+  *  Fixed an issue with Cynosure's pre-emption wrapper sometimes ignoring multiline strings.
