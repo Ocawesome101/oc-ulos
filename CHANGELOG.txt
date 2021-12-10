@@ -245,6 +245,7 @@ ULOS 21.10:
   *  There is now a `netutils` package available, containing a `wget` utility.
   *  The installer's online mode finally no longer clobbers `/init.lua` (by installing CLDR) except as the last step.
 
-ULOS 21.11:
-  *  Release 21.11.
+ULOS 21.12:
+  *  Release 21.12.
   *  Fixed a bug with starting services in USysD.
+  *  Added a new function, `message()`, to Cynosure's `process` API.
