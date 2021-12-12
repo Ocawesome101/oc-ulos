@@ -250,3 +250,5 @@ ULOS 21.12:
   *  Fixed a bug with starting services in USysD.
   *  Added a new function, `message()`, to Cynosure's `process` API.
   *  Fixed an issue with Cynosure's pre-emption wrapper sometimes ignoring multiline strings.
+  *  Cynosure now has configurable behavior for `computer.pullSignal` with a kernel argument.
+  *  Bump Cynosure's version to 1.11
