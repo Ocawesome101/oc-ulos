@@ -251,4 +251,5 @@ ULOS 21.12:
   *  Added a new function, `message()`, to Cynosure's `process` API.
   *  Fixed an issue with Cynosure's pre-emption wrapper sometimes ignoring multiline strings.
   *  Cynosure now has configurable behavior for `computer.pullSignal` with a kernel argument.
-  *  Bump Cynosure's version to 1.11
+  *  There is now a `sysfs` handler for the `eeprom` component.
+  *  Replaced the preprocessor with a slightly improved version, making the kernel ~30KB smaller.  It might now load on 192K of memory.
