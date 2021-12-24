@@ -252,4 +252,4 @@ ULOS 21.12:
   *  Fixed an issue with Cynosure's pre-emption wrapper sometimes ignoring multiline strings.
   *  Cynosure now has configurable behavior for `computer.pullSignal` with a kernel argument.
   *  There is now a `sysfs` handler for the `eeprom` component.
-  *  Replaced the preprocessor with a slightly improved version, making the kernel ~30KB smaller.  It might now load on 192K of memory.
+  *  Replaced the preprocessor with a slightly improved version, making the kernel ~30KB smaller.  It might now load on 192K of memory (though ULOS won't work).
