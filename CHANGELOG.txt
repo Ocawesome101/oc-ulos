@@ -245,11 +245,13 @@ ULOS 21.10:
   *  There is now a `netutils` package available, containing a `wget` utility.
   *  The installer's online mode finally no longer clobbers `/init.lua` (by installing CLDR) except as the last step.
 
-ULOS 21.12:
-  *  Release 21.12.
+ULOS 22.2:
+  *  Release 22.2.
   *  Fixed a bug with starting services in USysD.
   *  Added a new function, `message()`, to Cynosure's `process` API.
   *  Fixed an issue with Cynosure's pre-emption wrapper sometimes ignoring multiline strings.
   *  Cynosure now has configurable behavior for `computer.pullSignal` with a kernel argument.
   *  There is now a `sysfs` handler for the `eeprom` component.
   *  Replaced the preprocessor with a slightly improved version, making the kernel ~30KB smaller.  It might now load on 192K of memory (though ULOS won't work).
+  *  Completely rewrote Cynosure's code wrapper.  It now behaves as expected when quote types are mixed.
+  *  `os.execute` now behaves properly when `$PATH` is not set.
